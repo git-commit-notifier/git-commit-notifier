@@ -1,5 +1,7 @@
 require 'rubygems'
 require 'diff/lcs'
+require 'digest/sha1'
+
 require File.dirname(__FILE__) + '/result_processor'
 
 def escape_content(s)
@@ -303,11 +305,18 @@ class DiffToHtml
     msg
   end
 
-  def check_handled_commits(commits)
+	def unique_commits_per_branch?
+		!!@config['unique_commits_per_branch']
+	end
+
+  def check_handled_commits(commits, branch)
     return commits if defined?(Spec)
     previous_dir = (!@previous_dir.nil? && File.exists?(@previous_dir)) ? @previous_dir : '/tmp'
-    previous_file = File.join(previous_dir, HANDLED_COMMITS_FILE)
-    new_file = File.join(previous_dir, NEW_HANDLED_COMMITS_FILE)
+		prefix = unique_commits_per_branch? ? "#{Digest.SHA1.hexdigest(branch)}." : ''
+		previous_name = "#{prefix}#{HANDLED_COMMITS_FILE}"
+		new_name = "#{prefix}#{NEW_HANDLED_COMMITS_FILE}"
+    previous_file = File.join(previous_dir, previous_name)
+    new_file = File.join(previous_dir, new_name)
 
     previous_list = File.exists?(previous_file) ? File.read(previous_file).to_a.map(&:chomp).compact.uniq : []
     commits.reject! {|c| c.find { |sha| previous_list.include?(sha) } }
@@ -319,7 +328,7 @@ class DiffToHtml
 
       # use new file, unlink and rename to make it more atomic
       File.open(new_file, 'w') { |f| f << current_list.join("\n") }
-      File.unlink(previous_file)
+      File.unlink(previous_file) if File.exists?(previous_file)
       File.rename(new_file, previous_file)
     end
     commits
@@ -337,10 +346,10 @@ class DiffToHtml
       commits = []
     else
       log = Git.log(rev1, rev2)
-      commits = log.scan(/^commit\s([a-f0-9]+)/).map{|match| match[0]}
+      commits = log.scan(/^commit\s([a-f0-9]+)/).map { |match| match[0] }
     end
 
-    commits = check_handled_commits(commits)
+    commits = check_handled_commits(commits, branch)
 
     commits.each_with_index do |commit, i|
       
