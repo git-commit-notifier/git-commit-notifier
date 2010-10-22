@@ -312,7 +312,7 @@ class DiffToHtml
   def check_handled_commits(commits, branch)
     return commits if defined?(Spec)
     previous_dir = (!@previous_dir.nil? && File.exists?(@previous_dir)) ? @previous_dir : '/tmp'
-		prefix = unique_commits_per_branch? ? "#{Digest.SHA1.hexdigest(branch)}." : ''
+		prefix = unique_commits_per_branch? ? "#{Digest::SHA1.hexdigest(branch)}." : ''
 		previous_name = "#{prefix}#{HANDLED_COMMITS_FILE}"
 		new_name = "#{prefix}#{NEW_HANDLED_COMMITS_FILE}"
     previous_file = File.join(previous_dir, previous_name)
