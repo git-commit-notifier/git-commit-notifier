@@ -305,9 +305,9 @@ class DiffToHtml
     msg
   end
 
-	def unique_commits_per_branch?
-		!!@config['unique_commits_per_branch']
-	end
+  def unique_commits_per_branch?
+    !!@config['unique_commits_per_branch']
+  end
 
   def check_handled_commits(commits, branch)
     previous_dir = (!@previous_dir.nil? && File.exists?(@previous_dir)) ? @previous_dir : '/tmp'
