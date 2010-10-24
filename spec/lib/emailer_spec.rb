@@ -17,8 +17,8 @@ describe Emailer do
     it "should not generate message from template" do
       any_instance_of(Emailer) do |emailer|
         dont_allow(emailer).generate_message
-        Emailer.new({})
       end
+      Emailer.new({})
     end
 
     it "should assign parameters from options" do
