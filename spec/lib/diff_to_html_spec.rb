@@ -70,6 +70,23 @@ describe DiffToHtml do
     end
   end
 
+  describe :unique_commits_per_branch? do
+    it "should be false unless specified in config" do
+      diff = DiffToHtml.new(nil, {})
+      diff.should_not be_unique_commits_per_branch
+    end
+
+    it "should be false if specified as false in config" do
+      diff = DiffToHtml.new(nil, { 'unique_commits_per_branch' => false })
+      diff.should_not be_unique_commits_per_branch
+    end
+
+    it "should be true if specified as true in config" do
+      diff = DiffToHtml.new(nil, { 'unique_commits_per_branch' => true })
+      diff.should be_unique_commits_per_branch
+    end
+  end
+
   it "multiple commits" do
     path = File.dirname(__FILE__) + '/../fixtures/'
     mock(Git).log(REVISIONS.first, REVISIONS.last) { IO.read(path + 'git_log') }
@@ -78,6 +95,7 @@ describe DiffToHtml do
     end
 
     diff = DiffToHtml.new
+    mock(diff).check_handled_commits(anything, 'master') { |commits, branch| commits }
     diff.diff_between_revisions REVISIONS.first, REVISIONS.last, 'testproject', 'master'
 
     diff.result.should have(5).commits # one result for each of the commits

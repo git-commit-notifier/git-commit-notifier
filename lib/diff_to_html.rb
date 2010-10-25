@@ -288,7 +288,7 @@ class DiffToHtml
   end
 
   def message_array_as_html(message)
-    message_map(message.collect { |m| CGI.escapeHTML(m)}.join("<br />"))
+    message_map(message.collect { |m| CGI.escapeHTML(m) }.join('<br />'))
   end
 
   def author_name_and_email(info)
@@ -305,12 +305,11 @@ class DiffToHtml
     msg
   end
 
-	def unique_commits_per_branch?
-		!!@config['unique_commits_per_branch']
-	end
+  def unique_commits_per_branch?
+    !!@config['unique_commits_per_branch']
+  end
 
   def check_handled_commits(commits, branch)
-    return commits if defined?(Spec)
     previous_dir = (!@previous_dir.nil? && File.exists?(@previous_dir)) ? @previous_dir : '/tmp'
 		prefix = unique_commits_per_branch? ? "#{Digest::SHA1.hexdigest(branch)}." : ''
 		previous_name = "#{prefix}#{HANDLED_COMMITS_FILE}"
@@ -346,7 +345,7 @@ class DiffToHtml
       commits = []
     else
       log = Git.log(rev1, rev2)
-      commits = log.scan(/^commit\s([a-f0-9]+)/).map { |match| match[0] }
+      commits = log.scan(/^commit\s([a-f0-9]+)/).map(&:first)
     end
 
     commits = check_handled_commits(commits, branch)
@@ -397,14 +396,14 @@ class DiffToHtml
   end
 
   def message_map(message)
-    if @config.include?('message_integration') && @config['message_integration'].respond_to?(:each_pair)
+    if @config['message_integration'].respond_to?(:each_pair)
       @config['message_integration'].each_pair do |pm, url|
         pm_def = DiffToHtml::INTEGRATION_MAP[pm.to_sym] or next
         replace_with = pm_def[:replace_with].gsub('#{url}', url)
         message_replace!(message, pm_def[:search_for], replace_with)
       end
     end
-    if @config.include?('message_map') && @config['message_map'].respond_to?(:each_pair)
+    if @config['message_map'].respond_to?(:each_pair)
       @config['message_map'].each_pair do |search_for, replace_with|
         message_replace!(message, Regexp.new(search_for), replace_with)
       end
