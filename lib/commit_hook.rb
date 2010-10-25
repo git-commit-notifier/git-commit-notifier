@@ -9,7 +9,7 @@ require 'emailer'
 require 'git'
 
 class CommitHook
-	
+
   class << self
     attr_reader :config
 
@@ -22,13 +22,13 @@ class CommitHook
     end
 
     def info(message)
-      $stdout.puts message 
+      $stdout.puts message
       $stdout.flush
     end
 
-		def logger
+    def logger
       @logger ||= Logger.new(config)
-		end
+    end
 
     def run(config_name, rev1, rev2, ref_name)
       @config = File.exist?(config_name) ? YAML::load_file(config_name) : {}
@@ -38,7 +38,7 @@ class CommitHook
 
       if recipient.nil? || recipient.length == 0
         CommitHook.show_error(
-          "Please add a recipient for the emails. Eg : \n" + 
+          "Please add a recipient for the emails. Eg : \n" +
           "      git config hooks.mailinglist  developer@example.com"
         )
         return
@@ -50,9 +50,9 @@ class CommitHook
       logger.debug("rev1: #{rev1}")
       logger.debug("rev2: #{rev2}")
 
-    
+
       info("Sending mail...")
-    
+
       prefix = config["emailprefix"] || Git.repo_name
       branch_name = "/#{ref_name.split("/").last}"
 
@@ -61,7 +61,7 @@ class CommitHook
 
       diff2html = DiffToHtml.new(Dir.pwd, config)
       diff2html.diff_between_revisions(rev1, rev2, prefix, ref_name)
-    
+
       diffresult = diff2html.result
 
       if config["ignore_merge"]

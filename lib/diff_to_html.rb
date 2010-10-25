@@ -17,7 +17,7 @@ class DiffToHtml
   MAX_COMMITS_PER_ACTION = 10000
   HANDLED_COMMITS_FILE = 'previously.txt'.freeze
   NEW_HANDLED_COMMITS_FILE = 'previously_new.txt'.freeze
-  
+
   attr_accessor :file_prefix, :current_file_name
   attr_reader :result
 
@@ -139,9 +139,9 @@ class DiffToHtml
     else
       op = "Changed"
     end
-    
+
     file_name = @current_file_name
-    
+
     if (@config["link_files"] && @config["link_files"] == "gitweb" && @config["gitweb"])
       file_name = "<a href='#{@config['gitweb']['path']}?p=#{@config['gitweb']['project']};f=#{file_name};hb=HEAD'>#{file_name}</a>"
     elsif (@config["link_files"] && @config["link_files"] == "gitorious" && @config["gitorious"])
@@ -149,7 +149,7 @@ class DiffToHtml
     elsif (@config["link_files"] && @config["link_files"] == "cgit" && @config["cgit"])
       file_name = "<a href='#{@config['cgit']['path']}/#{@config['cgit']['project']}/tree/#{file_name}'>#{file_name}</a>"
     end
-    
+
     header = "#{op} #{binary}file #{file_name}"
     "<h2>#{header}</h2>\n"
   end
@@ -311,9 +311,9 @@ class DiffToHtml
 
   def check_handled_commits(commits, branch)
     previous_dir = (!@previous_dir.nil? && File.exists?(@previous_dir)) ? @previous_dir : '/tmp'
-		prefix = unique_commits_per_branch? ? "#{Digest::SHA1.hexdigest(branch)}." : ''
-		previous_name = "#{prefix}#{HANDLED_COMMITS_FILE}"
-		new_name = "#{prefix}#{NEW_HANDLED_COMMITS_FILE}"
+    prefix = unique_commits_per_branch? ? "#{Digest::SHA1.hexdigest(branch)}." : ''
+    previous_name = "#{prefix}#{HANDLED_COMMITS_FILE}"
+    new_name = "#{prefix}#{NEW_HANDLED_COMMITS_FILE}"
     previous_file = File.join(previous_dir, previous_name)
     new_file = File.join(previous_dir, new_name)
 
@@ -321,7 +321,7 @@ class DiffToHtml
     commits.reject! {|c| c.find { |sha| previous_list.include?(sha) } }
 
     # if commit list empty there is no need to override list of handled commits
-		flatten_commits = commits.flatten
+    flatten_commits = commits.flatten
     unless flatten_commits.empty?
       current_list = (previous_list + flatten_commits).last(MAX_COMMITS_PER_ACTION)
 
@@ -351,7 +351,7 @@ class DiffToHtml
     commits = check_handled_commits(commits, branch)
 
     commits.each_with_index do |commit, i|
-      
+
       raw_diff = Git.show(commit)
       raise "git show output is empty" if raw_diff.empty?
       @last_raw = raw_diff
@@ -361,7 +361,7 @@ class DiffToHtml
       title = "<div class=\"title\">"
       title += "<strong>Message:</strong> #{message_array_as_html commit_info[:message]}<br />\n"
       title += "<strong>Commit:</strong> "
-      
+
       if (@config["link_files"] && @config["link_files"] == "gitweb" && @config["gitweb"])
         title += "<a href='#{@config['gitweb']['path']}?p=#{@config['gitweb']['project']};a=commitdiff;h=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
       elsif (@config["link_files"] && @config["link_files"] == "gitorious" && @config["gitorious"])
@@ -373,9 +373,9 @@ class DiffToHtml
       else
         title += " #{commit_info[:commit]}"
       end
-      
+
       title += "<br />\n"
-      
+
       title += "<strong>Branch:</strong> #{branch}\n<br />" unless branch =~ /\/head/
       title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}\n<br />"
       title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;\n</div>"

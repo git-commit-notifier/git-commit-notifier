@@ -38,12 +38,12 @@ class Emailer
       val = smtp_settings[key].to_s.empty? ? nil : smtp_settings[key]
       settings.merge!({ key => val})
     end
-      
+
     Net::SMTP.start(settings['address'], settings['port'], settings['domain'],
                     settings['user_name'], settings['password'], settings['authentication']) do |smtp|
 
       smtp.enable_tls if settings['enable_tls']
-      
+
       smtp.open_message_stream(@from_address, [@recipient]) do |f|
         content.each do |line|
           f.puts line
@@ -63,7 +63,7 @@ class Emailer
       f.flush
     end
   end
-  
+
   def send
     generate_message
     from = quote_if_necessary(@from_alias.empty? ? @from_address : "#{@from_alias} <#{@from_address}>", 'utf-8')

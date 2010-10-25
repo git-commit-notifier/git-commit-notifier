@@ -35,7 +35,7 @@ describe CommitHook do
     expect_repository_access
     emailer = mock!.send.subject
     mock(Emailer).new(anything, hash_including(:from_address => "max@example.com")) { emailer }
-    
+
     CommitHook.run 'spec/fixtures/git-notifier-group-email-by-push.yml', REVISIONS.first, REVISIONS.last, 'refs/heads/master'
    end
 
@@ -50,10 +50,10 @@ describe CommitHook do
 
   describe :logger do
     it "should be nstance of logger" do
-			mock(CommitHook).config { {} }
-			CommitHook.logger.should be_kind_of(Logger)
-		end
-	end
+      mock(CommitHook).config { {} }
+      CommitHook.logger.should be_kind_of(Logger)
+    end
+  end
 end
 
 __END__
