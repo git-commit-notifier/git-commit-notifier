@@ -1,8 +1,11 @@
 #!/usr/bin/env ruby
 
 # Be ready for UTF-8
-$KCODE = 'u';
-require 'jcode'
+if RUBY_VERSION < '1.9'
+  # This is for Unicode support in Ruby 1.8
+  $KCODE = 'u';
+  require 'jcode'
+end
 
 # parameters: revision1, revision 2, branch
 THIS_FILE = File.symlink?(__FILE__) ? File.readlink(__FILE__) : __FILE__
