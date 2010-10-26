@@ -12,7 +12,8 @@ class DiffToHtml
   INTEGRATION_MAP = {
     :mediawiki => { :search_for => /\[\[([^\[\]]+)\]\]/, :replace_with => '#{url}/\1' },
     :redmine => { :search_for => /\b(?:refs|fixes)\s*\#(\d+)/i, :replace_with => '#{url}/issues/show/\1' },
-    :bugzilla => { :search_for => /\bBUG\s*(\d+)/i, :replace_with => '#{url}/show_bug.cgi?id=\1' }
+    :bugzilla => { :search_for => /\bBUG\s*(\d+)/i, :replace_with => '#{url}/show_bug.cgi?id=\1' },
+    :fogbugz => { :search_for => /\bbugzid:\s*(\d+)/i, :replace_with => '#{url}\1' }
   }.freeze
   MAX_COMMITS_PER_ACTION = 10000
   HANDLED_COMMITS_FILE = 'previously.txt'.freeze

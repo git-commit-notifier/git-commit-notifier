@@ -73,6 +73,7 @@ message_integration:
 #  mediawiki: http://example.com/wiki # will rework [[text]] to MediaWiki pages
 #  redmine: http://redmine.example.com # will rework refs #123 to Redmine issues
 #  bugzilla: http://bz.example.com # will rework BUG 123 to Bugzilla bugs
+#  fogbugz: http://yourondemand.fogbugz.com/? # will rework BugzId: 123 to FogBugz cases
 
 # Track unique commits per branch?
 unique_commits_per_branch: false
