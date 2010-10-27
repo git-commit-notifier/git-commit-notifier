@@ -1,3 +1,9 @@
+if RUBY_VERSION < '1.9'
+  # This is for Unicode support in Ruby 1.8
+  $KCODE = 'u';
+  require 'jcode'
+end
+
 require 'rubygems'
 require 'faker'
 require 'rspec/core'
