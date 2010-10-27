@@ -317,7 +317,7 @@ class DiffToHtml
     previous_file = File.join(previous_dir, previous_name)
     new_file = File.join(previous_dir, new_name)
 
-    previous_list = File.exists?(previous_file) ? File.read(previous_file).to_a.map(&:chomp).compact.uniq : []
+    previous_list = File.exists?(previous_file) ? File.read(previous_file).to_a.map { |s| s.chomp }.compact.uniq : []
     commits.reject! {|c| c.find { |sha| previous_list.include?(sha) } }
 
     # if commit list empty there is no need to override list of handled commits
@@ -345,7 +345,7 @@ class DiffToHtml
       commits = []
     else
       log = Git.log(rev1, rev2)
-      commits = log.scan(/^commit\s([a-f0-9]+)/).map(&:first)
+      commits = log.scan(/^commit\s([a-f0-9]+)/).map { |a| a.first }
     end
 
     commits = check_handled_commits(commits, branch)

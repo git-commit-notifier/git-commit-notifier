@@ -6,22 +6,6 @@ if RUBY_VERSION < '1.9'
   require 'jcode'
 end
 
-# Ruby 1.8.6 syntax sugar
-unless Symbol.method_defined?(:to_proc)
-  class Symbol
-    # Turns the symbol into a simple proc, which is especially useful for enumerations. Examples:
-    #
-    #   # The same as people.collect { |p| p.name }
-    #   people.collect(&:name)
-    #
-    #   # The same as people.select { |p| p.manager? }.collect { |p| p.salary }
-    #   people.select(&:manager?).collect(&:salary)
-    def to_proc
-      Proc.new { |*args| args.shift.__send__(self, *args) }
-    end
-  end
-end
-
 # parameters: revision1, revision 2, branch
 THIS_FILE = File.symlink?(__FILE__) ? File.readlink(__FILE__) : __FILE__
 $:.unshift File.join(File.dirname(THIS_FILE), "../lib")
