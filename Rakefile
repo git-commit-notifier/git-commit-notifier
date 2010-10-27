@@ -16,7 +16,8 @@ begin
     gem.add_dependency('mocha')
     gem.add_dependency('hpricot')
     gem.add_dependency('tamtam')
-    gem.add_development_dependency('rspec')
+    gem.add_development_dependency('rspec-core')
+    gem.add_development_dependency('rspec-expectations')
     gem.add_development_dependency('rr')
     gem.add_development_dependency('faker')
     gem.add_development_dependency('rcov')
@@ -28,21 +29,20 @@ rescue LoadError
 end
 
 begin
-  require 'spec/rake/spectask'
-  Spec::Rake::SpecTask.new do |t|
-    t.warning = false
-    t.rcov    = false
+  require 'rspec/core/rake_task'
+
+  RSpec::Core::RakeTask.new do |t|
+    t.rspec_opts = ["-c", "-f progress", "-r ./spec/spec_helper.rb"]
   end
-  Spec::Rake::SpecTask.new do |t|
-    t.name    = :'spec:rcov'
-    t.warning = true
-    t.rcov    = true
-    t.rcov_opts = lambda do
-      IO.readlines("#{APP_ROOT}/spec/rcov.opts").map {|l| l.chomp.split " "}.flatten
-    end
+  
+  RSpec::Core::RakeTask.new(:rcov) do |t|
+    t.rcov = true
+    t.ruby_opts = '-w'
+    t.rspec_opts = ["-c", "-f progress", "-r ./spec/spec_helper.rb"]
+    t.rcov_opts = %q[-Ilib --exclude "spec/*,gems/*"]
   end
 rescue LoadError
-  $stderr.puts "RSpec not available. Install it with: gem install rspec"
+  $stderr.puts "RSpec not available. Install it with: gem install rspec-core"
 end
 
 task :default => :spec

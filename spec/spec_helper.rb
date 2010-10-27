@@ -1,11 +1,8 @@
 require 'rubygems'
-$:.unshift File.join(File.dirname(__FILE__), "..", "lib")
-
-require 'spec'
 require 'faker'
-require 'spec/autorun'
+require 'rspec/core'
 
-Spec::Runner.configure do |conf|
+RSpec.configure do |conf|
   conf.mock_with :rr
 end
 

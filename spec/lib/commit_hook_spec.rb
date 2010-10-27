@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper.rb', File.dirname(__FILE__))
+require File.expand_path('../../spec_helper', __FILE__)
 require 'commit_hook'
 
 describe CommitHook do
@@ -50,7 +50,7 @@ describe CommitHook do
 
   describe :logger do
     it "should be nstance of logger" do
-      mock(CommitHook).config { {} }
+      stub(CommitHook).config { {} }
       CommitHook.logger.should be_kind_of(Logger)
     end
   end
