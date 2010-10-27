@@ -87,14 +87,13 @@ describe DiffToHtml do
     end
   end
 
-  describe :check_handled_commits do
+  describe :get_previous_commits do
     it "should read and parse previous file if it exists" do
-      fn = File.join('/tmp', DiffToHtml::HANDLED_COMMITS_FILE)
+      fn = DiffToHtml::HANDLED_COMMITS_FILE
       diff = DiffToHtml.new
       mock(File).exists?(fn) { true }
       mock(IO).read(fn) { "a\nb" }
-      dont_allow(File).open
-      diff.check_handled_commits([], 'master').should == []
+      diff.get_previous_commits(fn).should == %w[a b]
     end
   end
 
