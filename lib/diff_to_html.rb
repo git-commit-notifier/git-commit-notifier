@@ -309,6 +309,17 @@ class DiffToHtml
     !!@config['unique_commits_per_branch']
   end
 
+  def get_previous_commits(previous_file)
+    previous_list = []
+    if File.exists?(previous_file)
+      lines = IO.read(previous_file)
+      lines = lines.lines if lines.respond_to?(:lines) # Ruby 1.9 tweak
+      previous_list = lines.to_a.map { |s| s.chomp }.compact.uniq
+      lines = nil
+    end
+    previous_list
+  end
+
   def check_handled_commits(commits, branch)
     previous_dir = (!@previous_dir.nil? && File.exists?(@previous_dir)) ? @previous_dir : '/tmp'
     prefix = unique_commits_per_branch? ? "#{Digest::SHA1.hexdigest(branch)}." : ''
@@ -317,7 +328,8 @@ class DiffToHtml
     previous_file = File.join(previous_dir, previous_name)
     new_file = File.join(previous_dir, new_name)
 
-    previous_list = File.exists?(previous_file) ? File.read(previous_file).to_a.map { |s| s.chomp }.compact.uniq : []
+    previous_list = get_previous_commits(previous_file)
+
     commits.reject! {|c| c.find { |sha| previous_list.include?(sha) } }
 
     # if commit list empty there is no need to override list of handled commits
