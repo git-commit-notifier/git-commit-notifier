@@ -1,6 +1,9 @@
 # set to true if you want to ignore empty merge messages
 ignore_merge: false 
 
+# Which file mode should be set
+# file_mode: 0644
+
 # Optional parameter for the subject-line of the mail 
 # emailprefix: GIT
 

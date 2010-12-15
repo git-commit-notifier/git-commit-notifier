@@ -343,6 +343,9 @@ class DiffToHtml
   
     # use new file, unlink and rename to make it more atomic
     File.open(new_file_path, 'w') { |f| f << current_list.join("\n") }
+    if @config['file_mode']
+      File.chmod(@config['file_mode'], new_file_path)
+    end
     File.unlink(previous_file_path) if File.exists?(previous_file_path)
     File.rename(new_file_path, previous_file_path)
   end
