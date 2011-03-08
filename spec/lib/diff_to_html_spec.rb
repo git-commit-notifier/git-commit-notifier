@@ -104,7 +104,7 @@ describe DiffToHtml do
     end
 
     diff = DiffToHtml.new
-    mock(diff).check_handled_commits(anything) { |commits| commits }
+    mock(diff).get_previous_commits(anything) {|commits| [] }
     diff.diff_between_revisions REVISIONS.first, REVISIONS.last, 'testproject', 'master'
 
     diff.result.should have(5).commits # one result for each of the commits
