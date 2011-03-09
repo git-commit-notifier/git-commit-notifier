@@ -361,7 +361,7 @@ class DiffToHtml
 
   def check_handled_commits(commits)
     previous_list = get_previous_commits(previous_file_path)
-    commits.reject! {|c| previous_list.include?(c) }
+    commits.reject! {|c| c.send(c.respond_to?(:lines) ? :lines : :to_s).find {|sha| previous_list.include?(sha) }}
     save_handled_commits(previous_list, commits.flatten)
 
     commits
