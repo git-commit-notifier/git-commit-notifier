@@ -59,17 +59,11 @@ class Emailer
       settings.merge!({ key => val})
     end
 
-    main_smtp = Net::SMTP.new settings['address'], settings['port']
-
-    main_smtp.enable_starttls  if settings['enable_tls']
-    main_smtp.start( settings['domain'],
-                    settings['user_name'], settings['password'], settings['authentication']) do |smtp|
-
-      recp = @recipient.split(",")
-      smtp.open_message_stream(@from_address, recp) do |f|
-        content.each do |line|
-          f.puts line
-        end
+    smtp = Net::SMTP.new settings['address'], settings['port']
+    smtp.enable_starttls if settings['enable_tls']
+    smtp.start(settings['domain'], settings['user_name'], settings['password'], settings['authentication']) do |smtp|
+      smtp.open_message_stream(@from_address, [@recipient]) do |f|
+        content.each { |line| f.puts line }
       end
     end
   end
