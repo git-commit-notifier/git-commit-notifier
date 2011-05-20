@@ -18,7 +18,7 @@ ignore_merge: false
 # It can send to multiple destinations, just separate email addresses by ",".
 mailinglist: developers@example.com,dev2@example.com,dev3@example.com,cto@example.com
 
-# The from addres. If not defined it will use 
+# The from address. If not defined it will use 
 # the address that is configured in git
 # from: sender@example.com
 

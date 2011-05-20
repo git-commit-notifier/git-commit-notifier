@@ -4,7 +4,7 @@ __by Bodo Tasche (bodo 'at' wannawork 'dot' de), Akzhan Abdulin (akzhan 'dot' ab
 
 Sends email commit messages splitting commits that were pushed in one step. 
 Email is delivered as text or HTML with changes refined per word. Emails 
-have a scanable subject containing the first sentence of the commit as well 
+have a scannable subject containing the first sentence of the commit as well 
 as the author, project and branch name. 
 
 It's also possible to send a mail to a newsgroup using NNTP.
@@ -63,26 +63,26 @@ Git-commit-notifier supports easy integration with Redmine, Bugzilla and MediaWi
 
 h2. Integration of links to other websites
 
-If you need integration with other websites not supported by git-commit-notifier you can use the message_map property. For that you need to know basics of regular expressions syntax.
+If you need integration with other websites not supported by git-commit-notifier you can use the message_map property. For that you need to know the basics of regular expressions syntax.
 
 Each key of message_map is a case sensitive Regexp pattern, and its value is the replacement string. 
-Every matched group (that defined by round brackets in regular expression) will be automatically substituted instead of \1-\9 backreferences in replacement string where number after backslash informs which group should be substituted instead of the backreference. The first matched group is known as \1.
+Every matched group (that defined by round brackets in regular expression) will be automatically substituted instead of \1-\9 backreferences in replacement string where the number after the backslash informs which group should be substituted instead of the backreference. The first matched group is known as \1.
 
 For example, when we need to expand "follow 23" to http://example.com/answer/23, simply type this:
 
 '\bfollow\s+(\d+)': 'http://example.com/answer/\1'
 
-Key and value are enclosed into single quotes. \b means that "follow" must not be preceded by other word chars, so "befollow" will not match but "be follow" will match. After "follow" we expect one or more spaces followed by group of one or more digits. The \1 in the result url will be replaced with the matched group.
+Key and value are each enclosed in single quotes. \b means that "follow" must not be preceded by other word chars, so "befollow" will not match but "be follow" will match. After "follow" we expect one or more spaces followed by group of one or more digits. The \1 in the result url will be replaced with the matched group.
 
 More examples can be found in the config file.
 
 h2. Logic of commits handling
 
-Commit notifier use special files named *previously.txt to track already
+The commit notifier uses special files named *previously.txt to track already
 handled commits to not send repeated messages about commits.
 
-By default all commits tracked through overall repository so after merge action
-You should not receive messages about commits those already posted in other branches.
+By default all commits are tracked through the whole repository so after a merge 
+you should not receive messages about those commits already posted in other branches.
 
 This behaviour can be changed using unique_commits_per_branch option. When it's true,
 you should receive new message about commit when it's merged in other branch.
