@@ -46,7 +46,7 @@ git-commit-notifier path_to_config.yml
 
 An example for the config file can be found in <a href="http://github.com/bitboxer/git-commit-notifier/blob/master/config/git-notifier-config.yml.sample">config/git-notifier-config.yml.sample</a>.
 
-If you want to send mails on each commit instead on each pull, you should add a file called "post-commit" with this content:
+If you want to send mails on each commit instead on each push, you should add a file called "post-commit" with this content:
 
 <pre>
 #!/bin/sh
