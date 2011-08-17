@@ -159,7 +159,8 @@ describe GitCommitNotifier::DiffToHtml do
 
     # third commit - dce6ade4cdc2833b53bd600ef10f9bce83c7102d
     hp = Nokogiri::HTML diff.result[2][:html_content]
-    (hp/"table").should have(6).tables # 6 files updated
+    (hp/"h2").should have(6).headers # 6 files in commit
+    (hp/"table").should have(4).tables # 4 files updated
     (hp/"h2")[1].inner_text.should == 'Added binary file railties/doc/guides/source/images/icons/callouts/11.png'
     (hp/"h2")[2].inner_text.should == 'Deleted binary file railties/doc/guides/source/icons/up.png'
     (hp/"h2")[3].inner_text.should == 'Deleted file railties/doc/guides/source/icons/README'

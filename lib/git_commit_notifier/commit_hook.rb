@@ -37,6 +37,10 @@ module GitCommitNotifier
         include_branches
       end
 
+      def merge_commit?(result)
+        ! result[:commit_info][:merge].nil?
+      end
+
       def run(config_name, rev1, rev2, ref_name)
         @config = File.exists?(config_name) ? YAML::load_file(config_name) : {}
 
@@ -75,24 +79,25 @@ module GitCommitNotifier
         info("Sending mail...")
 
         diff2html = DiffToHtml.new(Dir.pwd, config)
-        diff2html.diff_between_revisions(rev1, rev2, prefix, ref_name)
-
-        diffresult = diff2html.result
-
-        if config["ignore_merge"]
-          diffresult = diffresult.reject do |result|
-            !result[:commit_info][:merge].nil?
-          end
-        end
-
         if config["group_email_by_push"]
+          diff2html.diff_between_revisions(rev1, rev2, prefix, ref_name)
+          diffresult = diff2html.result
+          diff2html.clear_result
+
+          if config["ignore_merge"]
+            diffresult.reject! do |result|
+              merge_commit?(result)
+            end
+          end
+
           text, html = [], []
+          result = diffresult.first
+          return if result.nil? || !result[:commit_info]
+
           diffresult.each_with_index do |result, i|
             text << result[:text_content]
             html << result[:html_content]
           end
-          result = diffresult.first
-          return if result.nil? || !result[:commit_info]
 
           emailer = Emailer.new(config,
             :project_path => project_path,
@@ -108,10 +113,10 @@ module GitCommitNotifier
           )
           emailer.send
         else
-          diffresult.reverse.each_with_index do |result, i|
-            next unless result[:commit_info]
-            nr = number(diffresult.size, i)
-
+          i = 0
+          diff2html.diff_between_revisions(rev1, rev2, prefix, ref_name) do |result|
+            next  if config["ignore_merge"] && merge_commit?(result)
+            nr = number(i)
             emailer = Emailer.new(config,
               :project_path => project_path,
               :recipient => recipient,
@@ -125,14 +130,13 @@ module GitCommitNotifier
               :ref_name => ref_name
             )
             emailer.send
+            i += 1
           end
         end
       end
 
-      def number(total_entries, i)
-        return '' if total_entries <= 1
-        digits = total_entries < 10 ? 1 : 3
-        '[' + sprintf("%0#{digits}d", i + 1) + ']'
+      def number(i)
+        "[#{i + 1}]"
       end
     end
   end

@@ -7,6 +7,9 @@ ignore_merge: false
 # Limit lines per diff
 # lines_per_diff: 300
 
+# Show file list only when too many files
+# too_many_files: 1000
+
 # defines what branches to email for (defaults to all)
 # include_branches: ['master', 'some_other_branch']
 # include_branches: 'master, some_other_branch'

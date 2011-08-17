@@ -32,7 +32,7 @@ module GitCommitNotifier
     SECS_PER_DAY = 24 * 60 * 60
 
     attr_accessor :file_prefix, :current_file_name
-    attr_reader :result, :branch
+    attr_reader :result, :branch, :config
 
     def initialize(previous_dir = nil, config = nil)
       @previous_dir = previous_dir
@@ -45,16 +45,14 @@ module GitCommitNotifier
 
     def range_info(range)
       matches = range.match(/^@@ \-(\S+) \+(\S+)/)
-      return matches[1..2].map { |m| m.split(',')[0].to_i }
+      matches[1..2].map { |m| m.split(',')[0].to_i }
     end
 
     def line_class(line)
-      if line[:op] == :removal
-        return " class=\"r\""
-      elsif line[:op] == :addition
-        return " class=\"a\""
-      else
-        return ''
+      case line[:op]
+      when :removal  then ' class="r"'
+      when :addition then ' class="a"'
+      else                ''
       end
     end
 
@@ -66,26 +64,25 @@ module GitCommitNotifier
     end
 
     def lines_per_diff
-      @config['lines_per_diff']
+      config['lines_per_diff']
+    end
+
+    def skip_lines?
+      lines_per_diff && (@lines_added >= lines_per_diff)
     end
 
     def add_separator
-      return if lines_per_diff && @lines_added >= lines_per_diff
       @diff_result << '<tr class="sep"><td class="sep" colspan="3" title="Unchanged content skipped between diff. blocks">&hellip;</td></tr>'
+    end
+
+    def add_skip_notification
+      @diff_result << '<tr><td colspan="3">Diff too large and stripped&hellip;</td></tr>'
     end
 
     def add_line_to_result(line, escape)
       @lines_added += 1
-      if lines_per_diff
-        if @lines_added == lines_per_diff
-          @diff_result << '<tr><td colspan="3">Diff too large and stripped&hellip;</td></tr>'
-        end
-        if @lines_added >= lines_per_diff
-          return
-        end
-      end
       klass = line_class(line)
-      content = escape ? escape_content(line[:content]) : line[:content]
+      content = (escape == :escape) ? escape_content(line[:content]) : line[:content]
       padding = '&nbsp;' if klass != ''
       @diff_result << "<tr#{klass}>\n<td class=\"ln\">#{line[:removed]}</td>\n<td class=\"ln\">#{line[:added]}</td>\n<td>#{padding}#{content}</td></tr>"
     end
@@ -145,23 +142,27 @@ module GitCommitNotifier
 
     def operation_description
       binary = @binary ? 'binary ' : ''
-      if @file_removed
-        op = "Deleted"
+      op = if @file_removed
+        "Deleted"
       elsif @file_added
-        op = "Added"
+        "Added"
       else
-        op = "Changed"
+        "Changed"
       end
 
       file_name = @current_file_name
 
-      if (@config["link_files"] && @config["link_files"] == "gitweb" && @config["gitweb"])
-        file_name = "<a href='#{@config['gitweb']['path']}?p=#{Git.repo_name}.git;f=#{file_name};h=#{@current_sha};hb=#{@current_commit}'>#{file_name}</a>"
-      elsif (@config["link_files"] && @config["link_files"] == "gitorious" && @config["gitorious"])
-        file_name = "<a href='#{@config['gitorious']['path']}/#{@config['gitorious']['project']}/#{@config['gitorious']['repository']}/blobs/#{branch_name}/#{file_name}'>#{file_name}</a>"
-      elsif (@config["link_files"] && @config["link_files"] == "cgit" && @config["cgit"])
-        file_name = "<a href='#{@config['cgit']['path']}/#{@config['cgit']['project']}/tree/#{file_name}'>#{file_name}</a>"
-      end
+      if config['link_files']
+        file_name = if config["link_files"] == "gitweb" && config["gitweb"]
+          "<a href='#{config['gitweb']['path']}?p=#{Git.repo_name}.git;f=#{file_name};h=#{@current_sha};hb=#{@current_commit}'>#{file_name}</a>"
+        elsif config["link_files"] == "gitorious" && config["gitorious"]
+          "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/blobs/#{branch_name}/#{file_name}'>#{file_name}</a>"
+        elsif config["link_files"] == "cgit" && config["cgit"]
+          "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/tree/#{file_name}'>#{file_name}</a>"
+        else
+          file_name
+        end
+    end
 
       header = "#{op} #{binary}file #{file_name}"
       "<h2>#{header}</h2>\n"
@@ -180,18 +181,22 @@ module GitCommitNotifier
     def add_changes_to_result
       return if @current_file_name.nil?
       @diff_result << operation_description
-      @diff_result << '<table>'
-      unless @diff_lines.empty?
+      if !@diff_lines.empty? && !@too_many_files
+        @diff_result << '<table>'
         removals = []
         additions = []
         @diff_lines.each_with_index do |line, index|
+          if skip_lines?
+            add_skip_notification
+            break
+          end
           removals << line if line[:op] == :removal
           additions << line if line[:op] == :addition
           if line[:op] == :unchanged || index == @diff_lines.size - 1 # unchanged line or end of block, add prev lines to result
             if removals.size > 0 && additions.size > 0 # block of removed and added lines - perform intelligent diff
-              add_block_to_results(lcs_diff(removals, additions), escape = false)
+              add_block_to_results(lcs_diff(removals, additions), :dont_escape)
             else # some lines removed or added - no need to perform intelligent diff
-              add_block_to_results(removals + additions, escape = true)
+              add_block_to_results(removals + additions, :escape)
             end
             removals = []
             additions = []
@@ -199,11 +204,12 @@ module GitCommitNotifier
               prev_line = @diff_lines[index - 1]
               add_separator unless lines_are_sequential?(prev_line, line)
             end
-            add_line_to_result(line, escape = true) if line[:op] == :unchanged
+            add_line_to_result(line, :escape) if line[:op] == :unchanged
           end
+
         end
-        @diff_lines = []
         @diff_result << '</table>'
+        @diff_lines = []
       end
       # reset values
       @right_ln = nil
@@ -213,6 +219,9 @@ module GitCommitNotifier
       @binary = false
     end
 
+    RE_DIFF_FILE_NAME = /^diff\s\-\-git\sa\/(.*)\sb\//
+    RE_DIFF_SHA       = /^index [0-9a-fA-F]+\.\.([0-9a-fA-F]+)/
+
     def diff_for_revision(content)
       @left_ln = @right_ln = nil
 
@@ -221,18 +230,36 @@ module GitCommitNotifier
       @removed_files = []
       @current_file_name = nil
       @current_sha = nil
+      @too_many_files = false
 
-      content.split("\n").each do |line|
-        if line =~ /^diff\s\-\-git\sa\/(.*)\sb\//
+      lines = content.split("\n")
+
+      if config['too_many_files'] && config['too_many_files'].to_i > 0
+        file_count = lines.inject(0) do |count, line|
+          (line =~ RE_DIFF_FILE_NAME) ? (count + 1) : count
+        end
+
+        if file_count >= config['too_many_files'].to_i
+          @too_many_files = true
+        end
+      end
+
+      lines.each do |line|
+        case line
+        when RE_DIFF_FILE_NAME then
           file_name = $1
           add_changes_to_result
           @current_file_name = file_name
-        elsif line =~ /^index [0-9a-fA-F]+\.\.([0-9a-fA-F]+)/
+        when RE_DIFF_SHA then
           @current_sha = $1
+        else
+          op = line[0, 1]
+          if @left_ln.nil? || op == '@'
+            process_info_line(line, op)
+          else
+            process_code_line(line, op)
+          end
         end
-
-        op = line[0,1]
-        @left_ln.nil? || op == '@' ? process_info_line(line, op) : process_code_line(line, op)
       end
       add_changes_to_result
       @diff_result.join("\n")
@@ -320,7 +347,7 @@ module GitCommitNotifier
     end
 
     def unique_commits_per_branch?
-      !!@config['unique_commits_per_branch']
+      ! ! config['unique_commits_per_branch']
     end
 
     def get_previous_commits(previous_file)
@@ -380,66 +407,92 @@ module GitCommitNotifier
     end
 
     def old_commit?(commit_info)
-      return false if !@config.include?('skip_commits_older_than') || @config['skip_commits_older_than'].to_i <= 0
+      return false if ! config.include?('skip_commits_older_than') || (config['skip_commits_older_than'].to_i <= 0)
       commit_when = Time.parse(commit_info[:date])
-      (Time.now - commit_when) > (SECS_PER_DAY * @config['skip_commits_older_than'].to_i)
+      (Time.now - commit_when) > (SECS_PER_DAY * config['skip_commits_older_than'].to_i)
+    end
+
+    def diff_for_commit(commit)
+      @current_commit = commit
+      raw_diff = Git.show(commit)
+      raise "git show output is empty" if raw_diff.empty?
+
+      commit_info = extract_commit_info_from_git_show_output(raw_diff)
+      return nil  if old_commit?(commit_info)
+
+      title = "<div class=\"title\">"
+      title += "<strong>Message:</strong> #{message_array_as_html(commit_info[:message])}<br />\n"
+      title += "<strong>Commit:</strong> "
+
+      title += if config["link_files"]
+        if config["link_files"] == "gitweb" && config["gitweb"]
+          "<a href='#{config['gitweb']['path']}?p=#{Git.repo_name}.git;a=commitdiff;h=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
+        elsif config["link_files"] == "gitorious" && config["gitorious"]
+          "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/commit/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
+        elsif config["link_files"] == "trac" && config["trac"]
+          "<a href='#{config['trac']['path']}/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
+        elsif config["link_files"] == "cgit" && config["cgit"]
+          "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/commit/?id=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
+        else
+          " #{commit_info[:commit]}"
+        end
+      else
+        " #{commit_info[:commit]}"
+      end
+
+      title += "<br />\n"
+
+      title += "<strong>Branch:</strong> #{CGI.escapeHTML(branch_name)}\n<br />"
+      title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}\n<br />"
+      title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;\n</div>"
+
+      text = "#{raw_diff}\n\n\n"
+
+      html = title
+      html += diff_for_revision(extract_diff_from_git_show_output(raw_diff))
+      html += "<br /><br />"
+      commit_info[:message] = first_sentence(commit_info[:message])
+
+      {
+        :commit_info  => commit_info,
+        :html_content => html,
+        :text_content => text
+      }
+    end
+
+    def clear_result
+      @result = []
     end
 
     def diff_between_revisions(rev1, rev2, repo, branch)
       @branch = branch
       @result = []
-      if rev1 == rev2
-        commits = [rev1]
+      commits = if rev1 == rev2
+        [ rev1 ]
       elsif rev1 =~ /^0+$/
         # creating a new remote branch
-        commits = Git.branch_commits(branch)
+        Git.branch_commits(branch)
       elsif rev2 =~ /^0+$/
         # deleting an existing remote branch
-        commits = []
+        []
       else
         log = Git.log(rev1, rev2)
-        commits = log.scan(/^commit\s([a-f0-9]+)/).map { |a| a.first }
+        log.scan(/^commit\s([a-f0-9]+)/).map { |a| a.first }
       end
 
       commits = check_handled_commits(commits)
 
-      commits.each_with_index do |commit, i|
-        @current_commit = commit
-        raw_diff = Git.show(commit)
-        raise "git show output is empty" if raw_diff.empty?
-
-        commit_info = extract_commit_info_from_git_show_output(raw_diff)
-        next if old_commit?(commit_info)
-
-        title = "<div class=\"title\">"
-        title += "<strong>Message:</strong> #{message_array_as_html commit_info[:message]}<br />\n"
-        title += "<strong>Commit:</strong> "
-
-        if (@config["link_files"] && @config["link_files"] == "gitweb" && @config["gitweb"])
-          title += "<a href='#{@config['gitweb']['path']}?p=#{Git.repo_name}.git;a=commitdiff;h=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif (@config["link_files"] && @config["link_files"] == "gitorious" && @config["gitorious"])
-          title += "<a href='#{@config['gitorious']['path']}/#{@config['gitorious']['project']}/#{@config['gitorious']['repository']}/commit/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif (@config["link_files"] && @config["link_files"] == "trac" && @config["trac"])
-          title += "<a href='#{@config['trac']['path']}/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif (@config["link_files"] && @config["link_files"] == "cgit" && @config["cgit"])
-          title += "<a href='#{@config['cgit']['path']}/#{@config['cgit']['project']}/commit/?id=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        else
-          title += " #{commit_info[:commit]}"
+      commits.each do |commit|
+        @lines_added = 0  unless config["group_email_by_push"]
+        begin
+          commit_result = diff_for_commit(commit)
+          next  if commit_result.nil?
+          if block_given?
+            yield commit_result
+          else
+            @result << commit_result
+          end
         end
-
-        title += "<br />\n"
-
-        title += "<strong>Branch:</strong> #{CGI.escapeHTML(branch_name)}\n<br />"
-        title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}\n<br />"
-        title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;\n</div>"
-
-        text = "#{raw_diff}\n\n\n"
-
-        html = title
-        html += diff_for_revision(extract_diff_from_git_show_output(raw_diff))
-        html += "<br /><br />"
-        commit_info[:message] = first_sentence(commit_info[:message])
-        @result << {:commit_info => commit_info, :html_content => html, :text_content => text }
       end
     end
 
@@ -456,8 +509,8 @@ module GitCommitNotifier
     end
 
     def do_message_integration(message)
-      return message unless @config['message_integration'].respond_to?(:each_pair)
-      @config['message_integration'].each_pair do |pm, url|
+      return message unless config['message_integration'].respond_to?(:each_pair)
+      config['message_integration'].each_pair do |pm, url|
         pm_def = DiffToHtml::INTEGRATION_MAP[pm.to_sym] or next
         replace_with = pm_def[:replace_with]
         replace_with = replace_with.kind_of?(Proc) ? lambda { |m| pm_def[:replace_with].call(m, url) } : replace_with.gsub('#{url}', url)
@@ -467,8 +520,8 @@ module GitCommitNotifier
     end
 
     def do_message_map(message)
-      return message unless @config['message_map'].respond_to?(:each_pair)
-      @config['message_map'].each_pair do |search_for, replace_with|
+      return message unless config['message_map'].respond_to?(:each_pair)
+      config['message_map'].each_pair do |search_for, replace_with|
         message_replace!(message, Regexp.new(search_for), replace_with)
       end
       message
