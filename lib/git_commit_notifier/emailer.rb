@@ -52,6 +52,12 @@ class GitCommitNotifier::Emailer
     IO.read(stylesheet)
   end
 
+  def perform_delivery_debug(content)
+    content.each do |line|
+      puts line
+    end
+  end
+
   def perform_delivery_smtp(content, smtp_settings)
     settings = { }
     %w(address port domain user_name password authentication enable_tls).each do |key|
@@ -128,6 +134,7 @@ class GitCommitNotifier::Emailer
     case config['delivery_method'].to_sym
     when :smtp then perform_delivery_smtp(content, config['smtp_server'])
     when :nntp then perform_delivery_nntp(content, config['nntp_settings'])
+    when :debug then perform_delivery_debug(content)
     else # sendmail
       perform_delivery_sendmail(content, @config['sendmail_options'])
     end
