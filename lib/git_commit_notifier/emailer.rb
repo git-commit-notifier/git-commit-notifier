@@ -14,28 +14,31 @@ class GitCommitNotifier::Emailer
     end
   end
 
-  class << self
-    def reset_template
-      @template = nil
-    end
+  def reset_template
+    @template = nil
+  end
 
-    def template
-      unless @template
-        source = IO.read(TEMPLATE)
-        begin
-          require 'erubis'
-           @template = Erubis::Eruby.new(source)
-        rescue LoadError
-          require 'erb'
-          @template = ERB.new(source)
-        end
+  def template_source
+    template_file = config['custom_template'] || TEMPLATE
+    IO.read(template_file)
+  end
+
+  def template
+    unless @template
+      source = template_source
+      begin
+        require 'erubis'
+        @template = Erubis::Eruby.new(source)
+      rescue LoadError
+        require 'erb'
+        @template = ERB.new(source)
       end
-      @template
     end
+    @template
   end
 
   def mail_html_message
-    html = GitCommitNotifier::Emailer.template.result(binding)
+    html = template.result(binding)
     premailer = Premailer.new(html, :with_html_string => true, :adapter => :nokogiri)
     premailer.to_inline_css
   end

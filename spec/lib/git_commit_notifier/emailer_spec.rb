@@ -52,19 +52,35 @@ describe GitCommitNotifier::Emailer do
     end
   end
 
+  describe :template_source do
+    it "should return custom template if custom is provided" do
+      emailer = GitCommitNotifier::Emailer.new({'custom_template' => '/path/to/custom/template'})
+      mock(IO).read('/path/to/custom/template') { 'custom templated text' }
+      dont_allow(IO).read(GitCommitNotifier::Emailer::TEMPLATE)
+      emailer.template_source.should == 'custom templated text'
+    end
+
+    it "should return the default template if custom_template is not provided" do
+      emailer = GitCommitNotifier::Emailer.new({})
+      mock(IO).read(GitCommitNotifier::Emailer::TEMPLATE) { 'default templated text' }
+      emailer.template_source.should == 'default templated text'
+    end
+
+  end
+
   describe :template do
     before(:each) do
-      GitCommitNotifier::Emailer.reset_template
+      @emailer = GitCommitNotifier::Emailer.new({})
       mock(IO).read(GitCommitNotifier::Emailer::TEMPLATE) { 'erb' }
     end
 
     it "should respond to result" do
-      GitCommitNotifier::Emailer.template.should respond_to(:result)
+      @emailer.template.should respond_to(:result)
     end
 
     it "should return Erubis template if Erubis installed" do
-      mock(GitCommitNotifier::Emailer).require('erubis')
-      dont_allow(GitCommitNotifier::Emailer).require('erb')
+      mock(@emailer).require('erubis')
+      dont_allow(@emailer).require('erb')
       unless defined?(Erubis)
         module Erubis
           class Eruby
@@ -74,16 +90,15 @@ describe GitCommitNotifier::Emailer do
         end
       end
       mock.proxy(Erubis::Eruby).new('erb')
-      GitCommitNotifier::Emailer.template.should be_kind_of(Erubis::Eruby)
+      @emailer.template.should be_kind_of(Erubis::Eruby)
     end
 
     it "should return ERB template unless Erubis installed" do
       require 'erb'
-      mock(GitCommitNotifier::Emailer).require('erubis') { raise LoadError.new('erubis') }
-      mock(GitCommitNotifier::Emailer).require('erb')
+      mock(@emailer).require('erubis') { raise LoadError.new('erubis') }
+      mock(@emailer).require('erb')
       mock.proxy(ERB).new('erb')
-
-      GitCommitNotifier::Emailer.template.should be_kind_of(ERB)
+      @emailer.template.should be_kind_of(ERB)
     end
   end
 end
