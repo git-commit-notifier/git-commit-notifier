@@ -1,0 +1,4 @@
+e5be953 add install script
+M       README.rdoc
+D       git_commit_notifier/Rakefile
+M       post-receive

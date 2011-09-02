@@ -324,7 +324,7 @@ module GitCommitNotifier
         elsif line =~ /^Date/
           result[:date] = line[8..-1]
         elsif line =~ /^Merge/
-          result[:merge] = line[8..-1]
+          result[:merge] = line[7..-1]
         else
           clean_line = line.strip
           result[:message] << clean_line unless clean_line.empty?
@@ -416,6 +416,10 @@ module GitCommitNotifier
       (Time.now - commit_when) > (SECS_PER_DAY * config['skip_commits_older_than'].to_i)
     end
 
+    def merge_commit?(commit_info)
+      ! commit_info[:merge].nil?
+    end
+
     def diff_for_commit(commit)
       @current_commit = commit
       raw_diff = Git.show(commit, ignore_whitespace?)
@@ -423,6 +427,11 @@ module GitCommitNotifier
 
       commit_info = extract_commit_info_from_git_show_output(raw_diff)
       return nil  if old_commit?(commit_info)
+      changed_files = ""
+      if merge_commit?(commit_info)
+        merge_revisions = commit_info[:merge].split
+        changed_files += "Changed files:\n\n#{Git.changed_files(*merge_revisions)}\n"
+      end
 
       title = "<div class=\"title\">"
       title += "<strong>Message:</strong> #{message_array_as_html(commit_info[:message])}<br />\n"
@@ -449,11 +458,12 @@ module GitCommitNotifier
       title += "<strong>Branch:</strong> #{CGI.escapeHTML(branch_name)}\n<br />"
       title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}\n<br />"
       title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;\n</div>"
-
-      text = "#{raw_diff}\n\n\n"
+      text = "#{raw_diff}"
+      text += "#{changed_files}\n\n\n"
 
       html = title
       html += diff_for_revision(extract_diff_from_git_show_output(raw_diff))
+      html += message_array_as_html(changed_files.split("\n"))
       html += "<br /><br />"
       commit_info[:message] = first_sentence(commit_info[:message])
 
