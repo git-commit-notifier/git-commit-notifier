@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.email = %q{bodo@bitboxer.de}
   s.extra_rdoc_files = [
     "LICENSE",
-    "README.textile"
+    "README.md"
   ]
 
   s.files            = `git ls-files`.split("\n")
