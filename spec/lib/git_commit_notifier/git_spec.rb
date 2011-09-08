@@ -14,18 +14,18 @@ describe GitCommitNotifier::Git do
   describe :show do
     it "should get data from shell: git show without whitespaces" do
       expected = 'some data from git show'
-      mock(GitCommitNotifier::Git).from_shell("git show #{SAMPLE_REV} -w") { expected }
+      mock(GitCommitNotifier::Git).from_shell("git show #{SAMPLE_REV} --pretty=fuller -w") { expected }
       GitCommitNotifier::Git.show(SAMPLE_REV, true).should == expected
     end
 
     it "should get data from shell: git show with whitespaces" do
       expected = 'some data from git show'
-      mock(GitCommitNotifier::Git).from_shell("git show #{SAMPLE_REV}") { expected }
+      mock(GitCommitNotifier::Git).from_shell("git show #{SAMPLE_REV} --pretty=fuller") { expected }
       GitCommitNotifier::Git.show(SAMPLE_REV, false).should == expected
     end
 
     it "should strip given revision" do
-      mock(GitCommitNotifier::Git).from_shell("git show #{SAMPLE_REV} -w")
+      mock(GitCommitNotifier::Git).from_shell("git show #{SAMPLE_REV} --pretty=fuller -w")
       GitCommitNotifier::Git.show("#{SAMPLE_REV}\n", true)
     end
   end
@@ -73,7 +73,7 @@ describe GitCommitNotifier::Git do
 
   describe :log do
     it "should run git log with given args" do
-      mock(GitCommitNotifier::Git).from_shell("git log #{SAMPLE_REV}..#{SAMPLE_REV_2}") { " ok " }
+      mock(GitCommitNotifier::Git).from_shell("git log --pretty=fuller #{SAMPLE_REV}..#{SAMPLE_REV_2}") { " ok " }
       GitCommitNotifier::Git.log(SAMPLE_REV, SAMPLE_REV_2).should == "ok"
     end
   end

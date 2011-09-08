@@ -8,12 +8,13 @@ class GitCommitNotifier::Git
 
     def show(rev, ignore_whitespace)
       gitopt = ""
+      gitopt += " --pretty=fuller"
       gitopt += " -w" if ignore_whitespace
       from_shell("git show #{rev.strip}#{gitopt}")
     end
 
     def log(rev1, rev2)
-      from_shell("git log #{rev1}..#{rev2}").strip
+      from_shell("git log --pretty=fuller #{rev1}..#{rev2}").strip
     end
 
     def changed_files(rev1, rev2)

@@ -313,17 +313,22 @@ module GitCommitNotifier
     end
 
     def extract_commit_info_from_git_show_output(content)
-      result = { :message => [], :commit => '', :author => '', :date => '', :email => '' }
+      result = { :message => [], :commit => '', :author => '', :date => '', :email => '',
+      :committer => '', :commit_date => '', :committer_email => ''}
       content.split("\n").each do |line|
         if line =~ /^diff/ # end of commit info, return results
           return result
-        elsif line =~ /^commit/
+        elsif line =~ /^commit /
           result[:commit] = line[7..-1]
-        elsif line =~ /^Author/
-          result[:author], result[:email] = author_name_and_email(line[8..-1])
-        elsif line =~ /^Date/
-          result[:date] = line[8..-1]
-        elsif line =~ /^Merge/
+        elsif line =~ /^Author:/
+          result[:author], result[:email] = author_name_and_email(line[12..-1])
+        elsif line =~ /^AuthorDate:/
+          result[:date] = line[12..-1]
+        elsif line =~ /^Commit:/
+          result[:committer], result[:commit_email] = author_name_and_email(line[12..-1])
+        elsif line =~ /^CommitDate:/
+          result[:commit_date] = line[12..-1]
+        elsif line =~ /^Merge:/
           result[:merge] = line[7..-1]
         else
           clean_line = line.strip
@@ -457,7 +462,9 @@ module GitCommitNotifier
 
       title += "<strong>Branch:</strong> #{CGI.escapeHTML(branch_name)}\n<br />"
       title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}\n<br />"
-      title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;\n</div>"
+      title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;\n<br />"
+      title += "<strong>Committer:</strong> #{CGI.escapeHTML(commit_info[:committer])} &lt;#{commit_info[:commit_email]}&gt;\n</div>"
+
       text = "#{raw_diff}"
       text += "#{changed_files}\n\n\n"
 
