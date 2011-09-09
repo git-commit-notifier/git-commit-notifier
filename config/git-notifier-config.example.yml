@@ -113,6 +113,10 @@ show_master_branch_name: false
 # ignore whitespace?
 ignore_whitespace: true
 
+# Suppress printing the meta tag with charset=utf-8 in the e-mail.  Some broken
+# mailers can't recognize unicode.
+suppress_utf_meta: false
+
 # This is developer debugging options. Do not uncomment it if You aren't Jedi
 # debug:
 #   enabled: true
