@@ -28,6 +28,9 @@ mailinglist: developers@example.com,dev2@example.com,dev3@example.com,cto@exampl
 # stylesheet file (embedded template/styles.css by default)
 # stylesheet: /absolute/path/to/readable/stylesheet.css
 
+# custom template file (embedded template/email.html.erb)
+# custom_template: /absolute/path/to/readable/email.html.erb
+
 # select the delivery method: smtp, nntp, sendmail, or debug
 delivery_method: sendmail 
 

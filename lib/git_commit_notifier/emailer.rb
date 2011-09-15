@@ -5,10 +5,12 @@ class GitCommitNotifier::Emailer
   TEMPLATE = File.join(File.dirname(__FILE__), '/../../template/email.html.erb').freeze
   PARAMETERS = %w[project_path recipient from_address from_alias subject text_message html_message ref_name old_rev new_rev].freeze
 
-  attr_reader :config
+  def config
+    @@config
+  end
 
   def initialize(config, options = {})
-    @config = config || {}
+    @@config = config || {}
     PARAMETERS.each do |name|
       instance_variable_set("@#{name}".to_sym, options[name.to_sym])
     end
@@ -19,9 +21,14 @@ class GitCommitNotifier::Emailer
       @template = nil
     end
 
+    def template_source
+      template_file = @@config['custom_template'] || TEMPLATE
+      IO.read(template_file)
+    end
+
     def template
       unless @template
-        source = IO.read(TEMPLATE)
+        source = template_source
         begin
           require 'erubis'
            @template = Erubis::Eruby.new(source)
@@ -136,7 +143,7 @@ class GitCommitNotifier::Emailer
     when :nntp then perform_delivery_nntp(content, config['nntp_settings'])
     when :debug then perform_delivery_debug(content)
     else # sendmail
-      perform_delivery_sendmail(content, @config['sendmail_options'])
+      perform_delivery_sendmail(content, config['sendmail_options'])
     end
   end
 

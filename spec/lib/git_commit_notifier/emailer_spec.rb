@@ -86,4 +86,19 @@ describe GitCommitNotifier::Emailer do
       GitCommitNotifier::Emailer.template.should be_kind_of(ERB)
     end
   end
+
+  describe :template_source do
+    it "should return custom template if custom is provided" do
+            emailer = GitCommitNotifier::Emailer.new({'custom_template' => '/path/to/custom/template'})
+            mock(IO).read('/path/to/custom/template') { 'custom templated text' }
+      dont_allow(IO).read(GitCommitNotifier::Emailer::TEMPLATE)
+      GitCommitNotifier::Emailer.template_source.should == 'custom templated text'
+    end
+
+    it "should return the default template if custom_template is not provided" do
+            emailer = GitCommitNotifier::Emailer.new({})
+            mock(IO).read(GitCommitNotifier::Emailer::TEMPLATE) { 'default templated text' }
+      GitCommitNotifier::Emailer.template_source.should == 'default templated text'
+    end
+  end
 end
