@@ -434,8 +434,13 @@ module GitCommitNotifier
       return nil  if old_commit?(commit_info)
       changed_files = ""
       if merge_commit?(commit_info)
+        changed_file_list = []
         merge_revisions = commit_info[:merge].split
-        changed_files += "Changed files:\n\n#{Git.changed_files(*merge_revisions)}\n"
+        merge_first_parent = merge_revisions.slice!(0)
+        merge_revisions.each do |merge_other_parent|
+          changed_file_list += Git.changed_files(merge_first_parent, merge_other_parent)
+        end
+        changed_files = "Changed files:\n\n#{changed_file_list.uniq.join()}\n"
       end
 
       title = "<div class=\"title\">"
