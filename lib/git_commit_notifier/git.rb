@@ -22,7 +22,7 @@ class GitCommitNotifier::Git
 
     def changed_files(rev1, rev2)
       output = ""
-      lines = from_shell("git log #{rev1}..#{rev2} --name-status --oneline")
+      lines = from_shell("git log #{rev1}..#{rev2} --name-status --pretty=oneline")
       lines = lines.lines if lines.respond_to?(:lines)
       lines = lines.select {|line| line =~ /^\w{1}\s+\w+/} # grep out only filenames
       lines.uniq
