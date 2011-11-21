@@ -68,7 +68,8 @@ nntp_settings:
   address: your.nntp.host.here
   port: 119
 
-# Decorate files and commit ids with link to a webview. Possible values: none, gitweb, gitorious, cgit or trac
+# Decorate files and commit ids with link to a webview. Possible values: none, gitweb,
+# gitorious, cgit, trac or gitlabhq
 link_files: none 
 
 # If link_files is set to "gitweb", you need to configure the path to your gitweb
@@ -93,6 +94,11 @@ cgit:
 # instance
 trac:
   path: http://example.com/changeset
+
+# If link_files is set to "gitlabhq", you need to configure the path to your gitlabhq
+# instance
+gitlabhq:
+  path: http://gitlabhq.example.com
 
 # commit message URL map
 message_map:

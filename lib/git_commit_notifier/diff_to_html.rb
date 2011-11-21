@@ -163,6 +163,8 @@ module GitCommitNotifier
           "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/blobs/#{branch_name}/#{file_name}'>#{file_name}</a>"
         elsif config["link_files"] == "cgit" && config["cgit"]
           "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/tree/#{file_name}'>#{file_name}</a>"
+        elsif config["link_files"] == "gitlabhq" && config["gitlabhq"]
+          "<a href='#{config['gitlabhq']['path']}/#{Git.repo_name.gsub(".", "_")}/tree/#{@current_commit}/#{file_name}'>#{file_name}</a>"
         else
           file_name
         end
@@ -457,6 +459,8 @@ module GitCommitNotifier
           "<a href='#{config['trac']['path']}/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
         elsif config["link_files"] == "cgit" && config["cgit"]
           "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/commit/?id=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
+        elsif config["link_files"] == "gitlabhq" && config["gitlabhq"]
+          "<a href='#{config['gitlabhq']['path']}/#{Git.repo_name.gsub(".", "_")}/commits/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
         else
           " #{commit_info[:commit]}"
         end
