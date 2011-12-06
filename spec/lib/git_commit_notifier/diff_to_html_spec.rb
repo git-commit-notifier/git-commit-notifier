@@ -131,7 +131,7 @@ describe GitCommitNotifier::DiffToHtml do
     REVISIONS.each do |rev|
       mock(GitCommitNotifier::Git).show(rev, :ignore_whitespaces => true) { IO.read(FIXTURES_PATH + 'git_show_' + rev) }
     end
-
+    
     diff = GitCommitNotifier::DiffToHtml.new
     mock(diff).check_handled_commits(anything) { |commits| commits }
     diff.diff_between_revisions REVISIONS.first, REVISIONS.last, 'testproject', 'master'
@@ -142,21 +142,15 @@ describe GitCommitNotifier::DiffToHtml do
       html.should_not be_include('@@') # diff correctly processed
     end
 
-    # first commit
-    hp = Nokogiri::HTML diff.result.first[:html_content]
-    (hp/"table").should have(2).tables # 2 files updated - one table for each of the files
+    # second commit - 51b986619d88f7ba98be7d271188785cbbb541a0
+    hp = Nokogiri::HTML diff.result[1][:html_content]
+    (hp/"table").should have(3).tables # 3 files updated
     (hp/"table"/"tr"/"td").each do |td|
-      if td.inner_html == "require&nbsp;'iconv'"
-        # first added line in changeset a4629e707d80a5769f7a71ca6ed9471015e14dc9
-        td.parent.search('td')[0].inner_text.should == '' # left
-        td.parent.search('td')[1].inner_text.should == '2' # right
-        td.parent.search('td')[2].inner_html.should == "require&nbsp;'iconv'" # change
+      if td.inner_html =~ /create_btn/
+        cols = td.parent.search('td')
+        ['405', '408', ''].should be_include(cols[0].inner_text) # line 405 changed
       end
     end
-
-    # second commit
-    hp = Nokogiri::HTML diff.result[1][:html_content]
-    (hp/"table").should have(1).table # 1 file updated
 
     # third commit - dce6ade4cdc2833b53bd600ef10f9bce83c7102d
     hp = Nokogiri::HTML diff.result[2][:html_content]
@@ -167,15 +161,23 @@ describe GitCommitNotifier::DiffToHtml do
     (hp/"h2")[3].inner_text.should == 'Deleted file railties/doc/guides/source/icons/README'
     (hp/"h2")[4].inner_text.should == 'Added file railties/doc/guides/source/images/icons/README'
 
-    # fourth commit - 51b986619d88f7ba98be7d271188785cbbb541a0
+    # fourth commit
     hp = Nokogiri::HTML diff.result[3][:html_content]
-    (hp/"table").should have(3).tables # 3 files updated
+    (hp/"table").should have(1).table # 1 file updated
+
+    # fifth commit
+    hp = Nokogiri::HTML diff.result[4][:html_content]
+    (hp/"table").should have(2).tables # 2 files updated - one table for each of the files
     (hp/"table"/"tr"/"td").each do |td|
-      if td.inner_html =~ /create_btn/
-        cols = td.parent.search('td')
-        ['405', '408', ''].should be_include(cols[0].inner_text) # line 405 changed
+      if td.inner_html == "require&nbsp;'iconv'"
+        # first added line in changeset a4629e707d80a5769f7a71ca6ed9471015e14dc9
+        td.parent.search('td')[0].inner_text.should == '' # left
+        td.parent.search('td')[1].inner_text.should == '2' # right
+        td.parent.search('td')[2].inner_html.should == "require&nbsp;'iconv'" # change
       end
     end
+
+
   end
 
   it "should get good diff when new branch created" do
