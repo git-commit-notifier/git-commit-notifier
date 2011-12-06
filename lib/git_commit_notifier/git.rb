@@ -81,7 +81,12 @@ class GitCommitNotifier::Git
     end
 
     def mailing_list_address
-      from_shell("git config hooks.mailinglist").strip
+      mailinglist = begin
+		from_shell("git config hooks.mailinglist").strip
+	  rescue ArgumentError
+	    nil
+	  end
+	  return mailinglist
     end
   end
 end
