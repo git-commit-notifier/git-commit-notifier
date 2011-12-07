@@ -10,17 +10,23 @@ module GitCommitNotifier
 
     INTEGRATION_MAP = {
       :mediawiki => { :search_for => /\[\[([^\[\]]+)\]\]/, :replace_with => '#{url}/\1' },
-      :redmine => { :search_for => /\b(?:refs|fixes)([\s&,]+\#\d+)+/i, :replace_with => lambda do |m, url|
-        # we can provide Proc that gets matched string and configuration url.
-        # result should be in form of:
-        # { :phrase => 'phrase started with', :links => [ { :title => 'title of url', :url => 'target url' }, ... ] }
-        match = m.match(/^(refs|fixes)(.*)$/i)
-        return m unless match
-        r = { :phrase => match[1] }
-        captures = match[2].split(/[\s\&\,]+/).map { |m| (m =~ /(\d+)/) ? $1 : m }.reject { |c| c.empty? }
-        r[:links] = captures.map { |mn| { :title => "##{mn}", :url => "#{url}/issues/show/#{mn}" } }
-        r
-      end },
+      :redmine => {
+        :search_for => lambda do |config|
+          keywords = (config['redmine'] && config['redmine']['keywords']) || ["refs", "fixes"]
+          /\b(?:#{keywords.join('\b|')})([\s&,]+\#\d+)+/i
+        end,
+        :replace_with => lambda do |m, url, config|
+          # we can provide Proc that gets matched string and configuration url.
+          # result should be in form of:
+          # { :phrase => 'phrase started with', :links => [ { :title => 'title of url', :url => 'target url' }, ... ] }
+          keywords = (config['redmine'] && config['redmine']['keywords']) || ["refs", "fixes"]
+          match = m.match(/^(#{keywords.join('\b|')})(.*)$/i)
+          return m unless match
+          r = { :phrase => match[1] }
+          captures = match[2].split(/[\s\&\,]+/).map { |m| (m =~ /(\d+)/) ? $1 : m }.reject { |c| c.empty? }
+          r[:links] = captures.map { |mn| { :title => "##{mn}", :url => "#{url}/issues/show/#{mn}" } }
+          r
+        end },
       :bugzilla => { :search_for => /\bBUG\s*(\d+)/i, :replace_with => '#{url}/show_bug.cgi?id=\1' },
       :fogbugz => { :search_for => /\bbugzid:\s*(\d+)/i, :replace_with => '#{url}\1' }
     }.freeze
@@ -65,15 +71,11 @@ module GitCommitNotifier
     end
 
     def lines_per_diff
-      config['lines_per_diff']
+      @config['lines_per_diff']
     end
 
     def ignore_whitespaces?
       @config['ignore_whitespace'].nil? || @config['ignore_whitespace']
-    end
-
-    def skip_lines?
-      lines_per_diff && (@lines_added >= lines_per_diff)
     end
 
     def add_separator
@@ -85,7 +87,6 @@ module GitCommitNotifier
     end
 
     def add_line_to_result(line, escape)
-      @lines_added += 1
       klass = line_class(line)
       content = (escape == :escape) ? escape_content(line[:content]) : line[:content]
       padding = '&nbsp;' if klass != ''
@@ -156,7 +157,8 @@ module GitCommitNotifier
       end
 
       file_name = @current_file_name
-
+      
+      # TODO: these filenames, etc, should likely be properly html escaped
       if config['link_files']
         file_name = if config["link_files"] == "gitweb" && config["gitweb"]
           "<a href='#{config['gitweb']['path']}?p=#{Git.repo_name}.git;f=#{file_name};h=#{@current_sha};hb=#{@current_commit}'>#{file_name}</a>"
@@ -166,10 +168,12 @@ module GitCommitNotifier
           "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/tree/#{file_name}'>#{file_name}</a>"
         elsif config["link_files"] == "gitlabhq" && config["gitlabhq"]
           "<a href='#{config['gitlabhq']['path']}/#{Git.repo_name.gsub(".", "_")}/tree/#{@current_commit}/#{file_name}'>#{file_name}</a>"
+        elsif config["link_files"] == "redmine" && config["redmine"]
+          "<a href='#{config['redmine']['path']}/projects/#{config['redmine']['project'] || Git.repo_name}/repository/revisions/#{@current_commit}/entry/#{file_name}'>#{file_name}</a>"
         else
           file_name
         end
-    end
+      end
 
       header = "#{op} #{binary}file #{file_name}"
       "<h2>#{header}</h2>\n"
@@ -187,19 +191,26 @@ module GitCommitNotifier
 
     def add_changes_to_result
       return if @current_file_name.nil?
+      
+      @lines_added = 0
       @diff_result << operation_description
       if !@diff_lines.empty? && !@too_many_files
         @diff_result << '<table>'
         removals = []
         additions = []
-        @diff_lines.each_with_index do |line, index|
-          if skip_lines?
-            add_skip_notification
-            break
-          end
+        
+        lines = if lines_per_diff.nil?
+          line_budget = nil
+          @diff_lines
+        else
+          line_budget = lines_per_diff - @lines_added
+          @diff_lines.slice(0, line_budget)
+        end
+        
+        lines.each_with_index do |line, index|
           removals << line if line[:op] == :removal
           additions << line if line[:op] == :addition
-          if line[:op] == :unchanged || index == @diff_lines.size - 1 # unchanged line or end of block, add prev lines to result
+          if line[:op] == :unchanged || index == lines.size - 1 # unchanged line or end of block, add prev lines to result
             if removals.size > 0 && additions.size > 0 # block of removed and added lines - perform intelligent diff
               add_block_to_results(lcs_diff(removals, additions), :dont_escape)
             else # some lines removed or added - no need to perform intelligent diff
@@ -207,14 +218,17 @@ module GitCommitNotifier
             end
             removals = []
             additions = []
-            if index > 0 && index != @diff_lines.size - 1
-              prev_line = @diff_lines[index - 1]
+            if index > 0 && index != lines.size - 1
+              prev_line = lines[index - 1]
               add_separator unless lines_are_sequential?(prev_line, line)
             end
             add_line_to_result(line, :escape) if line[:op] == :unchanged
           end
-
+          @lines_added += 1
         end
+        
+        add_skip_notification if !line_budget.nil? && line_budget < @diff_lines.size
+
         @diff_result << '</table>'
         @diff_lines = []
       end
@@ -431,7 +445,10 @@ module GitCommitNotifier
 
     def truncate_long_lines(text)
       StringIO.open("", "w") do |output|
-        input = StringIO.new(text)
+        # Match encoding of output string to that of input string
+        output.string.force_encoding(text.encoding) if output.string.respond_to?(:force_encoding)
+
+        input = StringIO.new(text, "r")
         input.each_line "\n" do |line|
           if line.length > MAX_LINE_LENGTH && MAX_LINE_LENGTH >= 9
             # Truncate the line
@@ -500,6 +517,8 @@ module GitCommitNotifier
           "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/commit/?id=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
         elsif config["link_files"] == "gitlabhq" && config["gitlabhq"]
           "<a href='#{config['gitlabhq']['path']}/#{Git.repo_name.gsub(".", "_")}/commits/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
+        elsif config["link_files"] == "redmine" && config["redmine"]
+          "<a href='#{config['redmine']['path']}/projects/#{config['redmine']['project'] || Git.repo_name}/repository/revisions/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
         else
           " #{commit_info[:commit]}"
         end
@@ -553,7 +572,6 @@ module GitCommitNotifier
       commits = check_handled_commits(commits)
 
       commits.each do |commit|
-        @lines_added = 0  unless config["group_email_by_push"]
         begin
           commit_result = diff_for_commit(commit)
           next  if commit_result.nil?
@@ -582,9 +600,11 @@ module GitCommitNotifier
       return message unless config['message_integration'].respond_to?(:each_pair)
       config['message_integration'].each_pair do |pm, url|
         pm_def = DiffToHtml::INTEGRATION_MAP[pm.to_sym] or next
+        search_for = pm_def[:search_for]
+        search_for = search_for.kind_of?(Proc) ? search_for.call(@config) : search_for
         replace_with = pm_def[:replace_with]
-        replace_with = replace_with.kind_of?(Proc) ? lambda { |m| pm_def[:replace_with].call(m, url) } : replace_with.gsub('#{url}', url)
-        message_replace!(message, pm_def[:search_for], replace_with)
+        replace_with = replace_with.kind_of?(Proc) ? lambda { |m| pm_def[:replace_with].call(m, url, @config) } : replace_with.gsub('#{url}', url)
+        message_replace!(message, search_for, replace_with)
       end
       message
     end

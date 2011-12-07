@@ -158,12 +158,16 @@ class GitCommitNotifier::Emailer
   # such as in the middle of UTF8 characters.
   def encode_quoted_printable_message(text)
     StringIO.open("", "w") do |output|
-      input = StringIO.new(text, "r")
+      # Character encoding of output string can be plain US-ASCII since quoted-printable is plain ASCII
+      output.string.force_encoding("US-ASCII") if output.string.respond_to?(:force_encoding)
+      
       line_max = 76
       line_len = 0
+
+      input = StringIO.new(text, "r")
       input.each_byte do |b|
         case (b)
-        when 9, 32, 33..60, 62..126
+        when 9, 32..60, 62..126
           if line_len >= line_max - 1
             output << "=\r\n"
             line_len = 0
