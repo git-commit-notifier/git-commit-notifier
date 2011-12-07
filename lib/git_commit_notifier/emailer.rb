@@ -3,7 +3,7 @@ require 'premailer'
 class GitCommitNotifier::Emailer
   DEFAULT_STYLESHEET_PATH = File.join(File.dirname(__FILE__), '/../../template/styles.css').freeze
   TEMPLATE = File.join(File.dirname(__FILE__), '/../../template/email.html.erb').freeze
-  PARAMETERS = %w[project_path recipient from_address from_alias subject text_message html_message ref_name old_rev new_rev].freeze
+  PARAMETERS = %w[project_path recipient from_address from_alias subject text_message html_message repo_name ref_name old_rev new_rev].freeze
 
   def config
     @@config
@@ -43,8 +43,11 @@ class GitCommitNotifier::Emailer
 
   def mail_html_message
     html = GitCommitNotifier::Emailer.template.result(binding)
-    premailer = Premailer.new(html, :with_html_string => true, :adapter => :nokogiri)
-    premailer.to_inline_css
+    if config['expand_css'].nil? || config['expand_css']
+      premailer = Premailer.new(html, :with_html_string => true, :adapter => :nokogiri)
+      html = premailer.to_inline_css
+    end
+    html
   end
 
   def boundary
@@ -84,7 +87,7 @@ class GitCommitNotifier::Emailer
       smtp.open_message_stream(@from_address, recipients) do |f|
         content.each do |line|
           line.force_encoding('ASCII-8BIT') if line.respond_to?(:force_encoding)
-          f.puts line
+          f.print(line, "\r\n")
         end
       end
     end
@@ -97,7 +100,9 @@ class GitCommitNotifier::Emailer
     }.merge(options || {})
     command = "#{sendmail_settings['location']} #{sendmail_settings['arguments']}"
     IO.popen(command, "w+") do |f|
-      f.write(content.join("\n"))
+      content.each do |line|
+          f.print(line, "\r\n")
+      end
       f.flush
     end
   end
@@ -113,26 +118,36 @@ class GitCommitNotifier::Emailer
     to_tag = config['delivery_method'] == 'nntp' ? 'Newsgroups' : 'To'
     quoted_from_alias = quote_if_necessary("#{@from_alias}",'utf-8')
     from = @from_alias.empty? ? @from_address : "#{quoted_from_alias} <#{@from_address}>"
+    
+    plaintext = if config['add_plaintext'].nil? || config['add_plaintext']
+      @text_message
+    else
+      "Plain text part omitted. Consider setting add_plaintext in configuration."
+    end
 
     content = [
         "From: #{from}",
         "#{to_tag}: #{quote_if_necessary(@recipient, 'utf-8')}",
         "Subject: #{quote_if_necessary(@subject, 'utf-8')}",
         "X-Mailer: git-commit-notifier",
+        "X-Git-Repository: #{@repo_name}",
         "X-Git-Refname: #{@ref_name}",
         "X-Git-Oldrev: #{@old_rev}",
         "X-Git-Newrev: #{@new_rev}",
         "Mime-Version: 1.0",
-        "Content-Type: multipart/alternative; boundary=#{boundary}\n\n\n",
+        "Content-Type: multipart/alternative; boundary=#{boundary}",
+        "",
         "--#{boundary}",
         "Content-Type: text/plain; charset=utf-8",
         "Content-Transfer-Encoding: quoted-printable",
-        "Content-Disposition: inline\n\n\n",
-        encode_quoted_printable_message(@text_message),
-        "\n--#{boundary}",
+        "Content-Disposition: inline",
+        "",
+        encode_quoted_printable_message(plaintext),
+        "--#{boundary}",
         "Content-Type: text/html; charset=utf-8",
         "Content-Transfer-Encoding: quoted-printable",
-        "Content-Disposition: inline\n\n\n",
+        "Content-Disposition: inline",
+        "",
         encode_quoted_printable_message(mail_html_message),
         "--#{boundary}--"]
 

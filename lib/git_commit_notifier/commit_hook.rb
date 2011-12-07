@@ -60,7 +60,9 @@ module GitCommitNotifier
         logger.debug("rev2: #{rev2}")
         logger.debug("included branches: #{include_branches.join(', ')}") unless include_branches.nil?
 
-        prefix = config["emailprefix"] || Git.repo_name
+        repo_name = Git.repo_name
+        prefix = config["emailprefix"] || repo_name
+        
         branch_name = if ref_name =~ /^refs\/heads\/(.+)$/
           $1
         else
@@ -74,10 +76,30 @@ module GitCommitNotifier
           info("Supressing mail for branch #{branch_name}...")
           return
         end
-
+        
         branch_name = "/#{branch_name}"
         branch_name = "" if !config["show_master_branch_name"] && branch_name == '/master'
-
+        
+        # Replacements for subject template
+        #     prefix
+        #     repo_name
+        #     branch_name
+        #     commit_id (hash)
+        #     short_message
+        #     commit_number
+        #     commit_count
+        #     commit_count_phrase (1 commit, 2 commits, etc)
+        subject_words = {
+          :prefix => prefix,
+          :repo_name => repo_name,
+          :branch_name => branch_name,
+          :commit_id => nil,
+          :message => nil,
+          :commit_number => nil,
+          :commit_count => nil,
+          :commit_count_phrase => nil
+        }
+        
         info("Sending mail...")
 
         diff2html = DiffToHtml.new(Dir.pwd, config)
@@ -100,39 +122,63 @@ module GitCommitNotifier
             text << result[:text_content]
             html << result[:html_content]
           end
+          
+          # Form the subject from template
+          revised_subject_words = subject_words.merge({
+            :commit_id => result[:commit_info][:commit],
+            :message => result[:commit_info][:message],
+            :commit_number => 1,
+            :commit_count => diffresult.size,
+            :commit_count_phrase => diffresult.size == 1 ? "#{diffresult.size} commit" : "#{diffresult.size} commits"
+          })
+          subject_template = config['subject'] || "[${prefix}${branch_name}] ${commit_count_phrase}: ${message}"
+          subject = subject_template.gsub(/\$\{(\w+)\}/) { |m| revised_subject_words[$1.intern] }
 
           emailer = Emailer.new(config,
             :project_path => project_path,
             :recipient => recipient,
             :from_address => config["from"] || result[:commit_info][:email],
             :from_alias => result[:commit_info][:author],
-            :subject => "[#{prefix}#{branch_name}] #{diffresult.size > 1 ? "#{diffresult.size} commits: " : ''}#{result[:commit_info][:message]}",
+            :subject => subject,
             :text_message => text.join("------------------------------------------\n\n"),
             :html_message => html.join("<hr /><br />"),
             :old_rev => rev1,
             :new_rev => rev2,
-            :ref_name => ref_name
+            :ref_name => ref_name,
+            :repo_name => repo_name
           )
           emailer.send
         else
-          i = 0
+          commit_number = 1
           diff2html.diff_between_revisions(rev1, rev2, prefix, ref_name) do |result|
-            next  if config["ignore_merge"] && merge_commit?(result)
-            nr = number(i)
+            next if config["ignore_merge"] && merge_commit?(result)
+            
+            # Form the subject from template
+            revised_subject_words = subject_words.merge({
+              :commit_id => result[:commit_info][:commit],
+              :message => result[:commit_info][:message],
+              :commit_number => commit_number,
+              :commit_count => 1,
+              :commit_count_phrase => "1 commit"
+            })
+            subject_template = config['subject'] || "[${prefix}${branch_name}][${commit_number}] ${message}"
+            subject = subject_template.gsub(/\$\{(\w+)\}/) { |m| revised_subject_words[$1.intern] }
+            
             emailer = Emailer.new(config,
               :project_path => project_path,
               :recipient => recipient,
               :from_address => config["from"] || result[:commit_info][:email],
               :from_alias => result[:commit_info][:author],
-              :subject => "[#{prefix}#{branch_name}]#{nr} #{result[:commit_info][:message]}",
+              :subject => subject,
               :text_message => result[:text_content],
               :html_message => result[:html_content],
               :old_rev => rev1,
               :new_rev => rev2,
-              :ref_name => ref_name
+              :ref_name => ref_name,
+              :repo_name => repo_name
             )
             emailer.send
-            i += 1
+            commit_number += 1
           end
         end
       end

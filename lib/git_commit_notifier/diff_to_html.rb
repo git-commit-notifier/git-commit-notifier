@@ -442,7 +442,6 @@ module GitCommitNotifier
       ! commit_info[:merge].nil?
     end
     
-
     def truncate_long_lines(text)
       StringIO.open("", "w") do |output|
         # Match encoding of output string to that of input string
@@ -467,8 +466,8 @@ module GitCommitNotifier
               # UTF8 sequence
               6.times do
                 c = line[-1, 1].to_i
-                break if (c & 0x80) == 0    # Last character is plain ASCII: don't truncate
-                line.slice!(-1, 1)        # Truncate character
+                break if (c & 0x80) == 0      # Last character is plain ASCII: don't truncate
+                line.slice!(-1, 1)            # Truncate character
                 break if (c & 0xc0) == 0xc0   # Last character was the start of a UTF8 sequence, so we can stop now
               end
             end
