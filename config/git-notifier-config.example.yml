@@ -26,18 +26,20 @@ too_many_files: 50
 #
 #     prefix                - The emailprefix set, defaulting to repo_name
 #     repo_name             - Name of the git repo
-#     branch_name           - Name of the git branch (master is "" unless show_master_branch_name)
+#     branch_name           - Name of the git branch
+#     slash_branch_name     - /branch_name (master is "" unless show_master_branch_name)
 #     commit_id             - The git commit id (hash)
 #     message               - The commit message
 #     commit_number         - The commit number within the push; 1-based
 #     commit_count          - The number of commits within the push
 #     commit_count_phrase   - The number of commits, as "1 commit", "2 commits", etc.
+#     commit_count_phrase2  - "2 commits: ", "3 commits: ", etc, or "" if just one
 #
 # The default subject template varies a little depending on whether 
 # or not group_email_by_push is set.
 #
-#subject: "[${prefix}${branch_name}] ${commit_count_phrase}: ${message}"
-#subject: "[${prefix}${branch_name}][${commit_number}] ${message}"
+#subject: "[${prefix}${slash_branch_name}] ${commit_count_phrase2}${message}"
+#subject: "[${prefix}${slash_branch_name}][${commit_number}] ${message}"
 
 # defines what branches to email for (defaults to all)
 # include_branches: ['master', 'some_other_branch']

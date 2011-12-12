@@ -15,13 +15,18 @@ module GitCommitNotifier
         GitCommitNotifier::CommitHook.show_error("You have to add a path to the config file for git-commit-notifier")
         puts "Usage:  git-commit-notifier config-script [oldrev newrev [ref]]"
       when 1
-        stdin = $stdin.gets
-        if stdin.nil?
+        if $stdin.eof?
           GitCommitNotifier::CommitHook.show_error("No data given on standard input")
           return
         end
-        oldrev, newrev, ref = stdin.strip.split
-        GitCommitNotifier::CommitHook.run args.first, oldrev, newrev, ref
+        
+        # Note that there may be multiple lines on stdin, such
+        # as in the case of multiple tags being pushed
+        $stdin.each_line do |line|
+          oldrev, newrev, ref = line.strip.split
+          GitCommitNotifier::CommitHook.run args.first, oldrev, newrev, ref
+        end
+
       when 2
         GitCommitNotifier::CommitHook.run args.first, args.last, args.last, ""
       when 3

@@ -70,6 +70,8 @@ describe GitCommitNotifier::CommitHook do
    end
 
   def expect_repository_access
+    mock(GitCommitNotifier::Git).rev_type(REVISIONS.first) { "commit" }
+    mock(GitCommitNotifier::Git).rev_type(REVISIONS.last) { "commit" }
     mock(GitCommitNotifier::Git).log(REVISIONS.first, REVISIONS.last) { IO.read(FIXTURES_PATH + 'git_log') }
     mock(GitCommitNotifier::Git).mailing_list_address { 'recipient@test.com' }
     mock(GitCommitNotifier::Git).repo_name { 'testproject' }

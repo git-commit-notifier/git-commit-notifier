@@ -60,13 +60,13 @@ describe GitCommitNotifier::Git do
 
     it "should return folder name if no emailprefix and directory not ended with .git" do
       mock(GitCommitNotifier::Git).from_shell("git config hooks.emailprefix") { " " }
-      mock(Dir).pwd { "/home/someuser/repositories/myrepo" }
+      mock(GitCommitNotifier::Git).git_dir { "/home/someuser/repositories/myrepo" }
       GitCommitNotifier::Git.repo_name.should == "myrepo"
     end
 
     it "should return folder name without extension if no emailprefix and directory ended with .git" do
       mock(GitCommitNotifier::Git).from_shell("git config hooks.emailprefix") { " " }
-      mock(Dir).pwd { "/home/someuser/repositories/myrepo.git" }
+      mock(GitCommitNotifier::Git).git_dir { "/home/someuser/repositories/myrepo.git" }
       GitCommitNotifier::Git.repo_name.should == "myrepo"
     end
   end

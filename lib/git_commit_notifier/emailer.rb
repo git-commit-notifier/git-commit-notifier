@@ -116,17 +116,19 @@ class GitCommitNotifier::Emailer
 
   def send
     to_tag = config['delivery_method'] == 'nntp' ? 'Newsgroups' : 'To'
-    quoted_from_alias = quote_if_necessary("#{@from_alias}",'utf-8')
-    from = @from_alias.empty? ? @from_address : "#{quoted_from_alias} <#{@from_address}>"
+    quoted_from_alias = @from_alias.nil? ? quote_if_necessary("#{@from_alias}",'utf-8') : nil
+    from = (@from_alias.nil? || @from_alias.empty?) ? @from_address : "#{quoted_from_alias} <#{@from_address}>"
     
     plaintext = if config['add_plaintext'].nil? || config['add_plaintext']
       @text_message
     else
       "Plain text part omitted. Consider setting add_plaintext in configuration."
     end
+    
+    content = []
+    content << "From: #{from }" if !from.nil?
 
-    content = [
-        "From: #{from}",
+    content.concat [
         "#{to_tag}: #{quote_if_necessary(@recipient, 'utf-8')}",
         "Subject: #{quote_if_necessary(@subject, 'utf-8')}",
         "X-Mailer: git-commit-notifier",

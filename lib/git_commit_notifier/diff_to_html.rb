@@ -39,7 +39,7 @@ module GitCommitNotifier
     SECS_PER_DAY = 24 * 60 * 60
 
     attr_accessor :file_prefix, :current_file_name
-    attr_reader :result, :branch, :config
+    attr_reader :result, :oldrev, :newrev, :rev, :ref_name, :config
 
     def initialize(previous_dir = nil, config = nil)
       @previous_dir = previous_dir
@@ -433,7 +433,7 @@ module GitCommitNotifier
     end
 
     def branch_name
-      branch.split('/').last
+      ref_name.split('/').last
     end
 
     def old_commit?(commit_info)
@@ -485,7 +485,7 @@ module GitCommitNotifier
         output.string
       end
     end
-
+    
     def diff_for_commit(commit)
       @current_commit = commit
       raw_diff = truncate_long_lines(Git.show(commit, :ignore_whitespaces => ignore_whitespaces?))
@@ -556,35 +556,86 @@ module GitCommitNotifier
       @result = []
     end
 
-    def diff_between_revisions(rev1, rev2, repo, branch)
-      @branch = branch
-      @result = []
-      commits = if rev1 == rev2
-        [ rev1 ]
-      elsif rev1 =~ /^0+$/
-        # creating a new remote branch
-        Git.branch_commits(branch)
-      elsif rev2 =~ /^0+$/
-        # deleting an existing remote branch
-        []
-      else
-        log = Git.log(rev1, rev2)
+    def diff_for_unannotated_tag(tag, rev, change_type)
+      puts "diff_for_unannotated_tag #{tag}, #{rev}, #{change_type}"
+    end
+
+    def diff_for_annotated_tag(tag, rev, change_type)
+      puts "diff_for_annotated_tag #{tag}, #{rev}, #{change_type}"
+    end
+
+    def diff_for_branch(branch, rev, change_type)
+#      puts "diff_for_branch #{branch}, #{rev}, #{change_type}"
+      
+      commits = case change_type
+      when :create
+        rev
+      when :delete
+        puts "ignoring branch delete for now"
+      when :update
+        log = Git.log(@oldrev, @newrev)
         log.scan(/^commit\s([a-f0-9]+)/).map { |a| a.first }.reverse
       end
-
+      
       commits = check_handled_commits(commits)
-
+      
+      # Add each diff to @result
       commits.each do |commit|
-        begin
           commit_result = diff_for_commit(commit)
           next  if commit_result.nil?
-          if block_given?
-            yield commit_result
-          else
-            @result << commit_result
-          end
-        end
+          @result << commit_result
       end
+    end
+
+    def diff_between_revisions(rev1, rev2, repo, ref_name)
+      @result = []
+      
+      # Cleanup revs
+      @oldrev = Git.revparse(rev1)
+      @newrev = Git.revparse(rev2)
+      @ref_name = ref_name
+
+      # Establish the type of change
+      change_type = if @oldrev =~ /^0+$/
+        :create
+      elsif @newrev =~ /^0+$/
+        :delete
+      else
+        :update
+      end
+      
+      # Establish type of the revs
+      oldrev_type = Git.rev_type(@oldrev)
+      newrev_type = Git.rev_type(@newrev)
+      if newrev =~ /^0+$/
+        rev_type = oldrev_type
+        @rev = @oldrev
+      else
+        rev_type = newrev_type
+        @rev = @newrev
+      end
+      
+      # Determine what to do based on the ref_name and the rev_type
+      case "#{@ref_name},#{rev_type}"
+      when %r!^refs/tags/(.+),commit$!
+        # Change to an unannotated tag
+        diff_for_unannotated_tag($1, @rev, change_type)
+      when %r!^refs/tags/(.+),tag$!
+        # Change to a annotated tag
+        diff_for_annotated_tag($1, @rev, change_type)
+      when %r!^refs/heads/(.+),commit$!
+        # Change on a branch
+        diff_for_branch($1, @rev, change_type)
+      when %r!^refs/remotes/(.+),commit$!
+        # Remote branch
+        puts "Ignoring #{change_type} on remote branch #{$1}"
+      else
+        # Something we don't understand
+        puts "Unknown commit type #{ref_name},#{rev_type}"
+      end
+      
+      # If a block was given, pass it the results, in turn
+      @result.each { |result| yield result }  if block_given?
     end
 
     def message_replace!(message, search_for, replace_with)

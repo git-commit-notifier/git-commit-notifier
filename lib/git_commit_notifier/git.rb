@@ -66,8 +66,22 @@ class GitCommitNotifier::Git
       lines.to_a.map { |head| head.chomp }
     end
 
+    def git_dir()
+      from_shell("git rev-parse --git-dir").strip
+    end
+
+    def revparse(param)
+      from_shell("git rev-parse '#{param}'").strip
+    end
+
     def branch_head(treeish)
       from_shell("git rev-parse #{treeish}").strip
+    end
+
+    def rev_type(rev)
+      from_shell("git cat-file -t '#{rev}' 2> /dev/null").strip
+    rescue ArgumentError
+      nil
     end
 
     def repo_name
@@ -77,7 +91,7 @@ class GitCommitNotifier::Git
         ''
       end
       return git_prefix unless git_prefix.empty?
-      Dir.pwd.split("/").last.sub(/\.git$/, '')
+      File.expand_path(git_dir).split("/").last.sub(/\.git$/, '')
     end
 
     def mailing_list_address
