@@ -1,3 +1,5 @@
+# -*- coding: utf-8; mode: ruby; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- vim:fenc=utf-8:filetype=ruby:et:sw=2:ts=2:sts=2
+
 require 'diff/lcs'
 require 'digest/sha1'
 require 'time'
@@ -39,7 +41,7 @@ module GitCommitNotifier
     SECS_PER_DAY = 24 * 60 * 60
 
     attr_accessor :file_prefix, :current_file_name
-    attr_reader :result, :branch, :config
+    attr_reader :result, :oldrev, :newrev, :rev, :ref_name, :config
 
     def initialize(previous_dir = nil, config = nil)
       @previous_dir = previous_dir
@@ -336,9 +338,11 @@ module GitCommitNotifier
     def extract_commit_info_from_git_show_output(content)
       result = { :message => [], :commit => '', :author => '', :date => '', :email => '',
       :committer => '', :commit_date => '', :committer_email => ''}
+      
+      message = []
       content.split("\n").each do |line|
-        if line =~ /^diff/ # end of commit info, return results
-          return result
+        if line =~ /^diff/ # end of commit info
+          break
         elsif line =~ /^commit /
           result[:commit] = line[7..-1]
         elsif line =~ /^Author:/
@@ -352,10 +356,19 @@ module GitCommitNotifier
         elsif line =~ /^Merge:/
           result[:merge] = line[7..-1]
         else
-          clean_line = line.strip
-          result[:message] << clean_line unless clean_line.empty?
+          message << line.strip
         end
       end
+      
+      # Strip blank lines off top and bottom of message
+      while !message.empty? && message.first.empty?
+        message.shift
+      end
+      while !message.empty? && message.last.empty?
+        message.pop
+      end
+      result[:message] = message
+      
       result
     end
 
@@ -424,16 +437,8 @@ module GitCommitNotifier
       File.rename(new_file_path, previous_file_path)
     end
 
-    def check_handled_commits(commits)
-      previous_list = get_previous_commits(previous_file_path)
-      commits.reject! {|c| (c.respond_to?(:lines) ? c.lines : c).find { |sha| previous_list.include?(sha) } }
-      save_handled_commits(previous_list, commits.flatten)
-
-      commits
-    end
-
     def branch_name
-      branch.split('/').last
+      ref_name.split('/').last
     end
 
     def old_commit?(commit_info)
@@ -485,7 +490,29 @@ module GitCommitNotifier
         output.string
       end
     end
-
+    
+    def markup_commit_for_html(commit)
+      commit = if config["link_files"]
+        if config["link_files"] == "gitweb" && config["gitweb"]
+          "<a href='#{config['gitweb']['path']}?p=#{Git.repo_name}.git;a=commitdiff;h=#{commit}'>#{commit}</a>"
+        elsif config["link_files"] == "gitorious" && config["gitorious"]
+          "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/commit/#{commit}'>#{commit}</a>"
+        elsif config["link_files"] == "trac" && config["trac"]
+          "<a href='#{config['trac']['path']}/#{commit}'>#{commit}</a>"
+        elsif config["link_files"] == "cgit" && config["cgit"]
+          "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/commit/?id=#{commit}'>#{commit}</a>"
+        elsif config["link_files"] == "gitlabhq" && config["gitlabhq"]
+          "<a href='#{config['gitlabhq']['path']}/#{Git.repo_name.gsub(".", "_")}/commits/#{commit}'>#{commit}</a>"
+        elsif config["link_files"] == "redmine" && config["redmine"]
+          "<a href='#{config['redmine']['path']}/projects/#{config['redmine']['project'] || Git.repo_name}/repository/revisions/#{commit}'>#{commit}</a>"
+        else
+          "#{commit}"
+        end
+      else
+        "#{commit}"
+      end
+    end
+    
     def diff_for_commit(commit)
       @current_commit = commit
       raw_diff = truncate_long_lines(Git.show(commit, :ignore_whitespaces => ignore_whitespaces?))
@@ -507,34 +534,13 @@ module GitCommitNotifier
 
       title = "<div class=\"title\">"
       title += "<strong>Message:</strong> #{message_array_as_html(commit_info[:message])}<br />\n"
-      title += "<strong>Commit:</strong> "
+      title += "<strong>Commit:</strong> #{markup_commit_for_html(commit_info[:commit])}<br />\n"
 
-      title += if config["link_files"]
-        if config["link_files"] == "gitweb" && config["gitweb"]
-          "<a href='#{config['gitweb']['path']}?p=#{Git.repo_name}.git;a=commitdiff;h=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif config["link_files"] == "gitorious" && config["gitorious"]
-          "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/commit/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif config["link_files"] == "trac" && config["trac"]
-          "<a href='#{config['trac']['path']}/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif config["link_files"] == "cgit" && config["cgit"]
-          "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/commit/?id=#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif config["link_files"] == "gitlabhq" && config["gitlabhq"]
-          "<a href='#{config['gitlabhq']['path']}/#{Git.repo_name.gsub(".", "_")}/commits/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        elsif config["link_files"] == "redmine" && config["redmine"]
-          "<a href='#{config['redmine']['path']}/projects/#{config['redmine']['project'] || Git.repo_name}/repository/revisions/#{commit_info[:commit]}'>#{commit_info[:commit]}</a>"
-        else
-          " #{commit_info[:commit]}"
-        end
-      else
-        " #{commit_info[:commit]}"
-      end
-
-      title += "<br />\n"
-
-      title += "<strong>Branch:</strong> #{CGI.escapeHTML(branch_name)}\n<br />" if branch_name
-      title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}\n<br />"
-      title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;\n<br />"
-      title += "<strong>Committer:</strong> #{CGI.escapeHTML(commit_info[:committer])} &lt;#{commit_info[:commit_email]}&gt;\n</div>"
+      title += "<strong>Branch:</strong> #{CGI.escapeHTML(branch_name)}<br />\n" if branch_name
+      title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}<br />\n"
+      title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;<br />\n"
+      title += "<strong>Committer:</strong> #{CGI.escapeHTML(commit_info[:committer])} &lt;#{commit_info[:commit_email]}&gt;\n"
+      title += "</div>"
 
       text = "#{raw_diff}"
       text += "#{changed_files}\n\n\n"
@@ -552,39 +558,164 @@ module GitCommitNotifier
       }
     end
 
+    def diff_for_lightweight_tag(tag, rev, change_type)
+    
+      if change_type == :delete
+        message = "Remove Lightweight Tag #{tag}"
+        
+        html = "<div class='title'>"
+        html += "<strong>Remove Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
+        html += "<strong>Type:</strong> lightweight<br />\n"
+        html += "<strong>Commit:</strong> #{markup_commit_for_html(rev)}<br />\n"
+        html += "</div>"
+        
+        text = "Remove Tag:</strong> #{tag}\n"
+        text += "Type: lightweight\n"
+        text += "Commit: #{rev}\n"
+      else
+        operation = change_type == :create ? "Add" : "Update"
+        message = "#{operation} Lightweight Tag #{tag}"
+        
+        html = "<div class='title'>"
+        html += "<strong>#{operation} Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
+        html += "<strong>Type:</strong> lightweight<br />\n"
+        html += "<strong>Commit:</strong> #{markup_commit_for_html(rev)}<br />\n"
+        html += "</div>"
+        
+        text = "#{operation} Tag: #{tag} (lightweight)\n"
+        text += "Type: lightweight\n"
+        text += "Commit: #{rev}\n"
+      end
+      
+      commit_info = {
+        :commit => rev,
+        :message => message
+      }
+      
+      @result << {
+        :commit_info => commit_info,
+        :html_content => html,
+        :text_content => text
+      }
+    end
+
+    def diff_for_annotated_tag(tag, rev, change_type)
+    
+      commit_info = {
+        :commit => rev
+      }
+      
+      if change_type == :delete
+        message = "Remove Annotated Tag #{tag}"
+        
+        html = "<div class='title'>"
+        html += "<strong>Remove Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
+        html += "<strong>Type:</strong> annotated<br />\n"
+        html += "</div>"
+        
+        text = message
+        commit_info[:message] = message
+      else
+        tag_info = Git.tag_info(ref_name)
+
+        operation = change_type == :create ? "Add" : "Update"
+        message = tag_info[:subject] || "#{operation} Annotated Tag #{tag}"
+        
+        html = "<div class='title'>"
+        html += "<strong>#{operation} Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
+        html += "<strong>Type:</strong> annotated<br />\n"
+        html += "<strong>Commit:</strong> #{markup_commit_for_html(tag_info[:tagobject])}<br />\n"
+        html += "<strong>Message:</strong> #{message_array_as_html(tag_info[:contents])}<br />\n"
+        html += "<strong>Tagger:</strong> #{CGI.escapeHTML(tag_info[:taggername])} #{CGI.escapeHTML(tag_info[:taggeremail])}<br />\n"
+        html += "</div>"
+        
+        text = "#{operation} Tag:</strong> #{tag}\n"
+        text += "Type: annotated\n"
+        text += "Commit: #{tag_info[:tagobject]}\n"
+        text += "Message: #{tag_info[:contents]}\n"
+        text += "Tagger: tag_info[:taggername] tag_info[:taggeremail]\n"
+        
+        commit_info[:message] = message
+        commit_info[:author], commit_info[:email] = author_name_and_email("#{tag_info[:taggername]} #{tag_info[:taggeremail]}")
+      end
+      
+      @result << {
+        :commit_info => commit_info,
+        :html_content => html,
+        :text_content => text
+      }
+    end
+
+    def diff_for_branch(branch, rev, change_type)      
+      commits = case change_type
+      when :delete
+        puts "ignoring branch delete"
+        []
+      when :create, :update
+        Git.new_commits(oldrev, newrev, ref_name)
+      end
+      
+      # Add each diff to @result
+      commits.each do |commit|
+          commit_result = diff_for_commit(commit)
+          next  if commit_result.nil?
+          @result << commit_result
+      end
+    end
+
     def clear_result
       @result = []
     end
 
-    def diff_between_revisions(rev1, rev2, repo, branch)
-      @branch = branch
-      @result = []
-      commits = if rev1 == rev2
-        [ rev1 ]
-      elsif rev1 =~ /^0+$/
-        # creating a new remote branch
-        Git.branch_commits(branch)
-      elsif rev2 =~ /^0+$/
-        # deleting an existing remote branch
-        []
+    def diff_between_revisions(rev1, rev2, repo, ref_name)
+      clear_result
+      
+      # Cleanup revs
+      @oldrev = Git.rev_parse(rev1)
+      @newrev = Git.rev_parse(rev2)
+      @ref_name = ref_name
+
+      # Establish the type of change
+      change_type = if @oldrev =~ /^0+$/
+        :create
+      elsif @newrev =~ /^0+$/
+        :delete
       else
-        log = Git.log(rev1, rev2)
-        log.scan(/^commit\s([a-f0-9]+)/).map { |a| a.first }.reverse
+        :update
       end
-
-      commits = check_handled_commits(commits)
-
-      commits.each do |commit|
-        begin
-          commit_result = diff_for_commit(commit)
-          next  if commit_result.nil?
-          if block_given?
-            yield commit_result
-          else
-            @result << commit_result
-          end
-        end
+      
+      # Establish type of the revs
+      @oldrev_type = Git.rev_type(@oldrev)
+      @newrev_type = Git.rev_type(@newrev)
+      if newrev =~ /^0+$/
+        @rev_type = @oldrev_type
+        @rev = @oldrev
+      else
+        @rev_type = @newrev_type
+        @rev = @newrev
       end
+      
+      # Determine what to do based on the ref_name and the rev_type
+      case "#{@ref_name},#{@rev_type}"
+      when %r!^refs/tags/(.+),commit$!
+        # Change to an unannotated tag
+        diff_for_lightweight_tag($1, @rev, change_type)
+      when %r!^refs/tags/(.+),tag$!
+        # Change to a annotated tag
+        diff_for_annotated_tag($1, @rev, change_type)
+      when %r!^refs/heads/(.+),commit$!
+        # Change on a branch
+        diff_for_branch($1, @rev, change_type)
+      when %r!^refs/remotes/(.+),commit$!
+        # Remote branch
+        puts "Ignoring #{change_type} on remote branch #{$1}"
+      else
+        # Something we don't understand
+        puts "Unknown change type #{ref_name},#{@rev_type}"
+      end
+      
+      # If a block was given, pass it the results, in turn
+      @result.each { |result| yield result }  if block_given?
     end
 
     def message_replace!(message, search_for, replace_with)
