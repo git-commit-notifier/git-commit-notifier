@@ -153,6 +153,16 @@ message_integration:
 #  fogbugz: http://yourondemand.fogbugz.com/? # will rework BugzId: 123 to FogBugz cases
 
 # Track unique commits per branch?
+# The name of this option is confusing.
+#
+# If set to false, notifications are issued only for commits that are unique to the current branch.
+# If set to true, notifications are issued for any commit on the current branch, whether or not
+# it also occurs on other branches.
+#
+# In other words, setting this to false will filter out commits that have already been displayed
+# at some time in the past, for another branch. The confusing "unique" in the option name can
+# be thought of as implying that commits for each branch are considered in isolation, without
+# considering other branches.
 unique_commits_per_branch: false
 
 # Skip commits older than N days

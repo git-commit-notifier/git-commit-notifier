@@ -113,7 +113,7 @@ module GitCommitNotifier
         
         info("Sending mail...")
 
-        diff2html = DiffToHtml.new(Dir.pwd, config)
+        diff2html = DiffToHtml.new(config)
         if config["group_email_by_push"]
           diff2html.diff_between_revisions(rev1, rev2, prefix, ref_name)
           diffresult = diff2html.result

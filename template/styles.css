@@ -1,4 +1,4 @@
-* {font-size:11px;}
+* {font-size:12px;}
 h2 {font-family:Verdana;font-size:12px;background-color: #bbb; font-weight: bold; line-height:25px; margin-bottom:2px; padding-left:5px}
 table {width:100%;border-collapse:collapse}
 .r {background-color: #fdd;}
@@ -6,6 +6,9 @@ table {width:100%;border-collapse:collapse}
 .a {background-color: #dfd;}
 .aa {background-color: #afa;}
 .title {background-color: #ddd; padding: 10px;font-family:Verdana;font-size:12px;}
+dt { float: left; font-weight: bold; min-width: 6em; }
+dt:after { content: ':'; }
+dd.multi-line { clear: both; margin-left: 0; padding-top: 1em; }
 td {color:#000;font-family: "Bitstream Vera Sans Mono","Monaco","Courier",monospace}
 .ln {background-color: #ccc; width:23px; text-align:right}
 td.sep {text-align:center;border-top:1px solid DimGray;border-bottom:1px solid DimGray;}

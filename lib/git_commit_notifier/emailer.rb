@@ -226,7 +226,7 @@ class GitCommitNotifier::Emailer
 
   # A quick-and-dirty regexp for determining whether a string contains any
   # characters that need escaping.
-  CHARS_NEEDING_QUOTING = /[\000-\011\013\014\016-\037\177-\377]/
+  CHARS_NEEDING_QUOTING = /[^\x0a\x0d\x20-\x7e]/
 
   # Quote the given text if it contains any "illegal" characters
   def quote_if_necessary(text, charset)

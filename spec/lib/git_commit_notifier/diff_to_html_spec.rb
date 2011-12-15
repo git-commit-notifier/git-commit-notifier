@@ -7,23 +7,6 @@ require 'git_commit_notifier'
 
 describe GitCommitNotifier::DiffToHtml do
 
-  describe :new_file_rights do
-    before(:all) do
-      @diff_to_html = GitCommitNotifier::DiffToHtml.new
-    end
-
-    it "should be DEFAULT_NEW_FILE_RIGHTS unless get stats of git config file" do
-      mock(File).stat(File.expand_path(GitCommitNotifier::DiffToHtml::GIT_CONFIG_FILE, '.')) { raise Errno::ENOENT.new('') }
-      @diff_to_html.new_file_rights.should == GitCommitNotifier::DiffToHtml::DEFAULT_NEW_FILE_RIGHTS
-    end
-
-    it "should be rights of git config file if exists" do
-      stats = mock!.mode { 0444 }.subject
-      mock(File).stat(File.expand_path(GitCommitNotifier::DiffToHtml::GIT_CONFIG_FILE, '.')) { stats }
-      @diff_to_html.new_file_rights.should == 0444
-    end
-  end
-
   describe :chmod do
     it "should not raise anything and set mode from stats mode" do
       file = Tempfile.new('stattest')
@@ -102,28 +85,18 @@ describe GitCommitNotifier::DiffToHtml do
 
   describe :unique_commits_per_branch? do
     it "should be false unless specified in config" do
-      diff = GitCommitNotifier::DiffToHtml.new(nil, {})
+      diff = GitCommitNotifier::DiffToHtml.new
       diff.should_not be_unique_commits_per_branch
     end
 
     it "should be false if specified as false in config" do
-      diff = GitCommitNotifier::DiffToHtml.new(nil, { 'unique_commits_per_branch' => false })
+      diff = GitCommitNotifier::DiffToHtml.new({ 'unique_commits_per_branch' => false })
       diff.should_not be_unique_commits_per_branch
     end
 
     it "should be true if specified as true in config" do
-      diff = GitCommitNotifier::DiffToHtml.new(nil, { 'unique_commits_per_branch' => true })
+      diff = GitCommitNotifier::DiffToHtml.new({ 'unique_commits_per_branch' => true })
       diff.should be_unique_commits_per_branch
-    end
-  end
-
-  describe :get_previous_commits do
-    it "should read and parse previous file if it exists" do
-      fn = GitCommitNotifier::DiffToHtml::HANDLED_COMMITS_FILE
-      diff = GitCommitNotifier::DiffToHtml.new
-      mock(File).exists?(fn) { true }
-      mock(IO).read(fn) { "a\nb" }
-      diff.get_previous_commits(fn).should == %w[a b]
     end
   end
 
@@ -132,7 +105,7 @@ describe GitCommitNotifier::DiffToHtml do
     mock(GitCommitNotifier::Git).changed_files('7e4f6b4', '4f13525') { [] }
     mock(GitCommitNotifier::Git).rev_type(REVISIONS.first) { "commit" }
     mock(GitCommitNotifier::Git).rev_type(REVISIONS.last) { "commit" }
-    mock(GitCommitNotifier::Git).new_commits(anything(), anything(), anything()) { REVISIONS.reverse }    
+    mock(GitCommitNotifier::Git).new_commits(anything, anything, anything, anything) { REVISIONS.reverse }    
     REVISIONS.each do |rev|
       mock(GitCommitNotifier::Git).show(rev, :ignore_whitespaces => true) { IO.read(FIXTURES_PATH + 'git_show_' + rev) }
     end
@@ -186,7 +159,7 @@ describe GitCommitNotifier::DiffToHtml do
     first_rev, last_rev = %w[ 0000000000000000000000000000000000000000 ff037a73fc1094455e7bbf506171a3f3cf873ae6 ]
     mock(GitCommitNotifier::Git).rev_type(first_rev) { "commit" }
     mock(GitCommitNotifier::Git).rev_type(last_rev) { "commit" }
-    mock(GitCommitNotifier::Git).new_commits(anything(), anything(), anything()) { [ 'ff037a73fc1094455e7bbf506171a3f3cf873ae6' ] }    
+    mock(GitCommitNotifier::Git).new_commits(anything, anything, anything, anything) { [ 'ff037a73fc1094455e7bbf506171a3f3cf873ae6' ] }    
     %w[ ff037a73fc1094455e7bbf506171a3f3cf873ae6 ].each do |rev|
       mock(GitCommitNotifier::Git).show(rev, :ignore_whitespaces => true) { IO.read(FIXTURES_PATH + 'git_show_' + rev) }
     end
@@ -219,7 +192,7 @@ describe GitCommitNotifier::DiffToHtml do
   describe :do_message_integration do
     before(:each) do
       @config = Hash.new
-      @diff = GitCommitNotifier::DiffToHtml.new(nil, @config)
+      @diff = GitCommitNotifier::DiffToHtml.new(@config)
     end
 
     it "should do nothing unless message_integration config section exists" do
@@ -239,7 +212,7 @@ describe GitCommitNotifier::DiffToHtml do
   describe :old_commit? do
     before(:each) do
       @config = Hash.new
-      @diff_to_html = GitCommitNotifier::DiffToHtml.new(nil, @config)
+      @diff_to_html = GitCommitNotifier::DiffToHtml.new(@config)
     end
 
     it "should be false unless skip_commits_older_than set" do

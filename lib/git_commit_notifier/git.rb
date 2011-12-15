@@ -82,26 +82,33 @@ class GitCommitNotifier::Git
       from_shell("git rev-parse #{treeish}").strip
     end
     
-    def new_commits(oldrev, newrev, refname)
+    def new_commits(oldrev, newrev, refname, unique_to_current_branch)
       # We want to get the set of commits (^B1 ^B2 ... ^oldrev newrev)
       # Where B1, B2, ..., are any other branch
+
+      s = Set.new
       
-      # Make a set of all branches, not'd
-      not_branches = from_shell("git rev-parse --not --branches")
-      s = not_branches.lines.map {|l| l.chomp}.to_set
+      # If we want to include only those commits that are
+      # unique to this branch, then exclude commits that occur on
+      # other branches
+      if unique_to_current_branch
+        # Make a set of all branches, not'd (^BCURRENT ^B1 ^B2...)
+        not_branches = from_shell("git rev-parse --not --branches")
+        s.merge(not_branches.lines.map {|l| l.chomp}.to_set)
       
-      # Remove the current branch from that set
-      current_branch = rev_parse(refname)
-      s.delete("^#{current_branch}")
+        # Remove the current branch (^BCURRENT) from the set
+        current_branch = rev_parse(refname)
+        s.delete("^#{current_branch}")
+      end
       
-      # Add not'd oldrev
+      # Add not'd oldrev (^oldrev)
       s.add("^#{oldrev}") unless oldrev =~ /^0+$/
 
       # Add newrev
       s.add(newrev)
       
       # We should now have ^B1... ^oldrev newrev
-      
+
       # Get all the commits that match that specification
       lines = from_shell("git rev-list #{s.to_a.join(' ')}")
       commits = lines.lines.map {|l| l.chomp}

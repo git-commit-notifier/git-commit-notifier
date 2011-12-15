@@ -74,7 +74,7 @@ describe GitCommitNotifier::CommitHook do
   def expect_repository_access
     mock(GitCommitNotifier::Git).rev_type(REVISIONS.first) { "commit" }
     mock(GitCommitNotifier::Git).rev_type(REVISIONS.last) { "commit" }
-    mock(GitCommitNotifier::Git).new_commits(anything(), anything(), anything()) { REVISIONS }    
+    mock(GitCommitNotifier::Git).new_commits(anything, anything, anything, anything) { REVISIONS }    
     mock(GitCommitNotifier::Git).mailing_list_address { 'recipient@test.com' }
     mock(GitCommitNotifier::Git).repo_name { 'testproject' }
     mock(GitCommitNotifier::Git).changed_files('7e4f6b4', '4f13525') { [] }

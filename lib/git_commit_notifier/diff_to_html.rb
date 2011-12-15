@@ -37,14 +37,12 @@ module GitCommitNotifier
     HANDLED_COMMITS_FILE = 'previously.txt'.freeze
     NEW_HANDLED_COMMITS_FILE = 'previously_new.txt'.freeze
     GIT_CONFIG_FILE = File.join('.git', 'config').freeze
-    DEFAULT_NEW_FILE_RIGHTS = 0664
     SECS_PER_DAY = 24 * 60 * 60
 
     attr_accessor :file_prefix, :current_file_name
     attr_reader :result, :oldrev, :newrev, :rev, :ref_name, :config
 
-    def initialize(previous_dir = nil, config = nil)
-      @previous_dir = previous_dir
+    def initialize(config = nil)
       @config = config || {}
       @lines_added = 0
       @file_added = false
@@ -393,50 +391,6 @@ module GitCommitNotifier
       ! ! config['unique_commits_per_branch']
     end
 
-    def get_previous_commits(previous_file)
-      return [] unless File.exists?(previous_file)
-      lines = IO.read(previous_file)
-      lines = lines.lines if lines.respond_to?(:lines) # Ruby 1.9 tweak
-      lines.to_a.map { |s| s.chomp }.compact.uniq
-    end
-
-    def previous_dir
-      (!@previous_dir.nil? && File.exists?(@previous_dir)) ? @previous_dir : '/tmp'
-    end
-
-    def previous_prefix
-      unique_commits_per_branch? ? "#{Digest::SHA1.hexdigest(branch)}." : ''
-    end
-
-    def previous_file_path
-      previous_name = "#{previous_prefix}#{HANDLED_COMMITS_FILE}"
-      File.join(previous_dir, previous_name)
-    end
-
-    def new_file_path
-      new_name = "#{previous_prefix}#{NEW_HANDLED_COMMITS_FILE}"
-      File.join(previous_dir, new_name)
-    end
-
-    def new_file_rights
-      git_config_path = File.expand_path(GIT_CONFIG_FILE, '.')
-      # we should copy rights from git config if possible
-      File.stat(git_config_path).mode
-    rescue
-      DEFAULT_NEW_FILE_RIGHTS
-    end
-
-    def save_handled_commits(previous_list, flatten_commits)
-      return if flatten_commits.empty?
-      current_list = (previous_list + flatten_commits).last(MAX_COMMITS_PER_ACTION)
-
-      # use new file, unlink and rename to make it more atomic
-      File.open(new_file_path, 'w') { |f| f << current_list.join("\n") }
-      File.chmod(new_file_rights, new_file_path) rescue nil
-      File.unlink(previous_file_path) if File.exists?(previous_file_path)
-      File.rename(new_file_path, previous_file_path)
-    end
-
     def branch_name
       ref_name.split('/').last
     end
@@ -532,15 +486,23 @@ module GitCommitNotifier
         changed_files = "Changed files:\n\n#{changed_file_list.uniq.join()}\n"
       end
 
-      title = "<div class=\"title\">"
-      title += "<strong>Message:</strong> #{message_array_as_html(commit_info[:message])}<br />\n"
-      title += "<strong>Commit:</strong> #{markup_commit_for_html(commit_info[:commit])}<br />\n"
+      title = "<dl class=\"title\">"
+      title += "<dt>Commit</dt><dd>#{markup_commit_for_html(commit_info[:commit])}</dd>\n"
+      title += "<dt>Branch</dt><dd>#{CGI.escapeHTML(branch_name)}</dd>\n" if branch_name
+      
+      title += "<dt>Author</dt><dd>#{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;</dd>\n"
+      
+      # Show separate committer name/email only if it differs from author
+      if commit_info[:author] != commit_info[:committer] || commit_info[:email] != commit_info[:commit_email]
+        title += "<dt>Committer</dt><dd>#{CGI.escapeHTML(commit_info[:committer])} &lt;#{commit_info[:commit_email]}&gt;</dd>\n"
+      end
 
-      title += "<strong>Branch:</strong> #{CGI.escapeHTML(branch_name)}<br />\n" if branch_name
-      title += "<strong>Date:</strong> #{CGI.escapeHTML commit_info[:date]}<br />\n"
-      title += "<strong>Author:</strong> #{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;<br />\n"
-      title += "<strong>Committer:</strong> #{CGI.escapeHTML(commit_info[:committer])} &lt;#{commit_info[:commit_email]}&gt;\n"
-      title += "</div>"
+      title += "<dt>Date</dt><dd>#{CGI.escapeHTML commit_info[:date]}</dd>\n"
+      
+      multi_line_message = commit_info[:message].count > 1
+      title += "<dt>Message</dt><dd class='#{multi_line_message ? "multi-line" : ""}'>#{message_array_as_html(commit_info[:message])}</dd>\n"
+      
+      title += "</dl>"
 
       text = "#{raw_diff}"
       text += "#{changed_files}\n\n\n"
@@ -563,26 +525,25 @@ module GitCommitNotifier
       if change_type == :delete
         message = "Remove Lightweight Tag #{tag}"
         
-        html = "<div class='title'>"
-        html += "<strong>Remove Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
-        html += "<strong>Type:</strong> lightweight<br />\n"
-        html += "<strong>Commit:</strong> #{markup_commit_for_html(rev)}<br />\n"
-        html += "</div>"
+        html = "<dl class='title'>"
+        html += "<dt>Tag</dt><dd>#{CGI.escapeHTML(tag)} (removed)</dd>\n"
+        html += "<dt>Type</dt><dd>lightweight</dd>\n"
+        html += "<dt>Commit</dt><dd>#{markup_commit_for_html(rev)}</dd>\n"
+        html += "</dl>"
         
-        text = "Remove Tag:</strong> #{tag}\n"
+        text = "Remove Tag: #{tag}\n"
         text += "Type: lightweight\n"
         text += "Commit: #{rev}\n"
       else
-        operation = change_type == :create ? "Add" : "Update"
-        message = "#{operation} Lightweight Tag #{tag}"
+        message = "#{change_type == :create ? "Add" : "Update"} Lightweight Tag #{tag}"
         
-        html = "<div class='title'>"
-        html += "<strong>#{operation} Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
-        html += "<strong>Type:</strong> lightweight<br />\n"
-        html += "<strong>Commit:</strong> #{markup_commit_for_html(rev)}<br />\n"
-        html += "</div>"
+        html = "<dl class='title'>"
+        html += "<dt>Tag</dt><dd>#{CGI.escapeHTML(tag)} (#{change_type == :create ? "added" : "updated"})</dd>\n"
+        html += "<dt>Type</dt><dd>lightweight</dd>\n"
+        html += "<dt>Commit</dt><dd>#{markup_commit_for_html(rev)}</dd>\n"
+        html += "</dl>"
         
-        text = "#{operation} Tag: #{tag} (lightweight)\n"
+        text = "Tag: #{tag} (#{change_type == :create ? "added" : "updated"})\n"
         text += "Type: lightweight\n"
         text += "Commit: #{rev}\n"
       end
@@ -608,32 +569,34 @@ module GitCommitNotifier
       if change_type == :delete
         message = "Remove Annotated Tag #{tag}"
         
-        html = "<div class='title'>"
-        html += "<strong>Remove Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
-        html += "<strong>Type:</strong> annotated<br />\n"
-        html += "</div>"
+        html = "<dl class='title'>"
+        html += "<dt>Tag</dt><dd>#{CGI.escapeHTML(tag)} (removed)</dd>\n"
+        html += "<dt>Type</dt><dd>annotated</dd>\n"
+        html += "</dl>"
         
         text = message
         commit_info[:message] = message
       else
         tag_info = Git.tag_info(ref_name)
 
-        operation = change_type == :create ? "Add" : "Update"
-        message = tag_info[:subject] || "#{operation} Annotated Tag #{tag}"
+        message = tag_info[:subject] || "#{change_type == :create ? "Add" : "Update"} Annotated Tag #{tag}"
         
-        html = "<div class='title'>"
-        html += "<strong>#{operation} Tag:</strong> #{CGI.escapeHTML(tag)}<br />\n"
-        html += "<strong>Type:</strong> annotated<br />\n"
-        html += "<strong>Commit:</strong> #{markup_commit_for_html(tag_info[:tagobject])}<br />\n"
-        html += "<strong>Message:</strong> #{message_array_as_html(tag_info[:contents])}<br />\n"
-        html += "<strong>Tagger:</strong> #{CGI.escapeHTML(tag_info[:taggername])} #{CGI.escapeHTML(tag_info[:taggeremail])}<br />\n"
-        html += "</div>"
+        html = "<dl class='title'>"
+        html += "<dt>Tag</dt><dd>#{CGI.escapeHTML(tag)} (#{change_type == :create ? "added" : "updated"})</dd>\n"
+        html += "<dt>Type</dt><dd>annotated</dd>\n"
+        html += "<dt>Commit</dt><dd>#{markup_commit_for_html(tag_info[:tagobject])}</dd>\n"
+        html += "<dt>Tagger</dt><dd>#{CGI.escapeHTML(tag_info[:taggername])} #{CGI.escapeHTML(tag_info[:taggeremail])}</dd>\n"
+
+        message_array = tag_info[:contents].split("\n")
+        multi_line_message = message_array.count > 1
+        html += "<dt>Message</dt><dd class='#{multi_line_message ? "multi-line" : ""}'>#{message_array_as_html(message_array)}</dd>\n"
+        html += "</dl>"
         
-        text = "#{operation} Tag:</strong> #{tag}\n"
+        text = "Tag:</strong> #{tag} (#{change_type == :create ? "added" : "updated"})\n"
         text += "Type: annotated\n"
         text += "Commit: #{tag_info[:tagobject]}\n"
-        text += "Message: #{tag_info[:contents]}\n"
         text += "Tagger: tag_info[:taggername] tag_info[:taggeremail]\n"
+        text += "Message: #{tag_info[:contents]}\n"
         
         commit_info[:message] = message
         commit_info[:author], commit_info[:email] = author_name_and_email("#{tag_info[:taggername]} #{tag_info[:taggeremail]}")
@@ -652,7 +615,11 @@ module GitCommitNotifier
         puts "ignoring branch delete"
         []
       when :create, :update
-        Git.new_commits(oldrev, newrev, ref_name)
+        # Note that "unique_commits_per_branch" really means "consider commits
+        # on this branch without regard to whether they occur on other branches"
+        # The flag unique_to_current_branch passed to new_commits means the 
+        # opposite: "consider only commits that are unique to this branch"
+        Git.new_commits(oldrev, newrev, ref_name, !unique_commits_per_branch?)
       end
       
       # Add each diff to @result
