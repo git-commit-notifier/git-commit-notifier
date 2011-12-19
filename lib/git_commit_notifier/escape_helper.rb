@@ -12,6 +12,6 @@ module GitCommitNotifier::EscapeHelper
   end
 
   def escape_content(s)
-    expand_tabs(CGI.escapeHTML(s), 4).gsub(" ", "&nbsp;")
+    CGI.escapeHTML(expand_tabs(s, 4)).gsub(" ", "&nbsp;")
   end
 end
