@@ -161,7 +161,7 @@ module GitCommitNotifier
       # TODO: these filenames, etc, should likely be properly html escaped
       if config['link_files']
         file_name = if config["link_files"] == "gitweb" && config["gitweb"]
-          "<a href='#{config['gitweb']['path']}?p=#{config['gitweb']['project'] || Git.repo_name}.git;f=#{file_name};h=#{@current_sha};hb=#{@current_commit}'>#{file_name}</a>"
+          "<a href='#{config['gitweb']['path']}?p=#{config['gitweb']['project'] || "#{Git.repo_name}.git"};f=#{file_name};h=#{@current_sha};hb=#{@current_commit}'>#{file_name}</a>"
         elsif config["link_files"] == "gitorious" && config["gitorious"]
           "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/blobs/#{branch_name}/#{file_name}'>#{file_name}</a>"
         elsif config["link_files"] == "cgit" && config["cgit"]
@@ -448,7 +448,7 @@ module GitCommitNotifier
     def markup_commit_for_html(commit)
       commit = if config["link_files"]
         if config["link_files"] == "gitweb" && config["gitweb"]
-          "<a href='#{config['gitweb']['path']}?p=#{Git.repo_name}.git;a=commitdiff;h=#{commit}'>#{commit}</a>"
+          "<a href='#{config['gitweb']['path']}?p=#{config['gitweb']['project'] || "#{Git.repo_name}.git"};a=commitdiff;h=#{commit}'>#{commit}</a>"
         elsif config["link_files"] == "gitorious" && config["gitorious"]
           "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/commit/#{commit}'>#{commit}</a>"
         elsif config["link_files"] == "trac" && config["trac"]
