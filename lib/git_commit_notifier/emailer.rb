@@ -5,7 +5,7 @@ require 'premailer'
 class GitCommitNotifier::Emailer
   DEFAULT_STYLESHEET_PATH = File.join(File.dirname(__FILE__), '/../../template/styles.css').freeze
   TEMPLATE = File.join(File.dirname(__FILE__), '/../../template/email.html.erb').freeze
-  PARAMETERS = %w[project_path recipient from_address from_alias subject text_message html_message repo_name ref_name old_rev new_rev].freeze
+  PARAMETERS = %w[project_path recipient from_address from_alias date subject text_message html_message repo_name ref_name old_rev new_rev].freeze
 
   def config
     @@config
@@ -130,6 +130,7 @@ class GitCommitNotifier::Emailer
     
     content = []
     content << "From: #{from}" if !from.nil?
+    content << "Date: #{@date}" if !@date.nil?
 
     content.concat [
         "#{to_tag}: #{quote_if_necessary(@recipient, 'utf-8')}",
