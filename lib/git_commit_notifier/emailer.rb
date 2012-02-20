@@ -130,7 +130,10 @@ class GitCommitNotifier::Emailer
     
     content = []
     content << "From: #{from}" if !from.nil?
-    content << "Date: #{@date}" if !@date.nil?
+    
+    # Setting the email date from the commit date is undesired by those
+    # who sort their email by send date instead of receive date
+    #content << "Date: #{@date}" if !@date.nil?
 
     content.concat [
         "#{to_tag}: #{quote_if_necessary(@recipient, 'utf-8')}",
