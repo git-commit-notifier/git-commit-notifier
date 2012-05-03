@@ -80,6 +80,7 @@ describe GitCommitNotifier::CommitHook do
     mock(GitCommitNotifier::Git).changed_files('7e4f6b4', '4f13525') { [] }
     REVISIONS.each do |rev|
       mock(GitCommitNotifier::Git).show(rev, :ignore_whitespaces => true) { IO.read(FIXTURES_PATH + "git_show_#{rev}") }
+      mock(GitCommitNotifier::Git).describe(rev) { IO.read(FIXTURES_PATH + "git_describe_#{rev}") }
     end
   end
 

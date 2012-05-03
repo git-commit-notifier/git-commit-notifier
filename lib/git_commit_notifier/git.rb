@@ -40,6 +40,14 @@ class GitCommitNotifier::Git
       from_shell("git show #{rev.strip}#{gitopt}")
     end
 
+    # Runs `git describe'
+    # @return [String] Its output
+    # @see from_shell
+    # @param [String] rev Revision
+    def describe(rev)
+      from_shell("git describe --always #{rev.strip}").strip
+    end
+
     # Runs `git log`
     # @note uses "--pretty=fuller" option.
     # @return [String] Its output

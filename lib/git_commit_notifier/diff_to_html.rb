@@ -535,6 +535,8 @@ module GitCommitNotifier
       html += "<br /><br />"
       commit_info[:message] = first_sentence(commit_info[:message])
 
+      # Append the 'git describe' information
+      commit_info[:description] = Git.describe(commit)
       {
         :commit_info  => commit_info,
         :html_content => html,

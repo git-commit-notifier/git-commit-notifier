@@ -117,6 +117,7 @@ module GitCommitNotifier
         #     branch_name
         #     slash_branch_name
         #     commit_id (hash)
+        #     description ('git describe' tag)
         #     short_message
         #     commit_number
         #     commit_count
@@ -128,6 +129,7 @@ module GitCommitNotifier
           :branch_name => branch_name,
           :slash_branch_name => slash_branch_name,
           :commit_id => nil,
+          :description => nil,
           :message => nil,
           :commit_number => nil,
           :commit_count => nil,
@@ -156,6 +158,7 @@ module GitCommitNotifier
           revised_subject_words = subject_words.merge({
             :commit_id => result[:commit_info][:commit],
             :message => result[:commit_info][:message],
+            :description => result[:commit_info][:description],
             :commit_number => 1,
             :commit_count => diffresult.size,
             :commit_count_phrase => diffresult.size == 1 ? "1 commit" : "#{diffresult.size} commits",
@@ -186,6 +189,7 @@ module GitCommitNotifier
             revised_subject_words = subject_words.merge({
               :commit_id => result[:commit_info][:commit],
               :message => result[:commit_info][:message],
+              :description => result[:commit_info][:description],
               :commit_number => commit_number,
               :commit_count => count,
               :commit_count_phrase => count == 1 ? "1 commit" : "#{count} commits",

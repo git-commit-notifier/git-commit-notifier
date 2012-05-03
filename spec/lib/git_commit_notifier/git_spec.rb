@@ -32,6 +32,14 @@ describe GitCommitNotifier::Git do
     end
   end
 
+  describe :describe do
+    it "should strip given description" do
+      expected = 'some description\n'
+      mock(GitCommitNotifier::Git).from_shell("git describe --always #{SAMPLE_REV}") { expected }
+      GitCommitNotifier::Git.describe(SAMPLE_REV).should == expected
+    end
+  end
+
   describe :branch_heads do
     before(:each) do
       mock(GitCommitNotifier::Git).from_shell("git rev-parse --branches") { "some\npopular\ntext\n" }

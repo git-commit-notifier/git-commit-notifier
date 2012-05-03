@@ -29,6 +29,7 @@ too_many_files: 50
 #     branch_name           - Name of the git branch
 #     slash_branch_name     - /branch_name (master is "" unless show_master_branch_name)
 #     commit_id             - The git commit id (hash)
+#     description           - The git description tag ("git describe --always")
 #     message               - The commit message
 #     commit_number         - The commit number within the push; 1-based
 #     commit_count          - The number of commits within the push

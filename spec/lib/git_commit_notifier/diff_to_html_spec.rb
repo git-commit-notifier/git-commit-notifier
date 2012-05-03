@@ -108,6 +108,7 @@ describe GitCommitNotifier::DiffToHtml do
     mock(GitCommitNotifier::Git).new_commits(anything, anything, anything, anything) { REVISIONS.reverse }
     REVISIONS.each do |rev|
       mock(GitCommitNotifier::Git).show(rev, :ignore_whitespaces => true) { IO.read(FIXTURES_PATH + 'git_show_' + rev) }
+      mock(GitCommitNotifier::Git).describe(rev) { IO.read(FIXTURES_PATH + 'git_describe_' + rev) }
     end
 
     diff = GitCommitNotifier::DiffToHtml.new
@@ -162,6 +163,7 @@ describe GitCommitNotifier::DiffToHtml do
     mock(GitCommitNotifier::Git).new_commits(anything, anything, anything, anything) { [ 'ff037a73fc1094455e7bbf506171a3f3cf873ae6' ] }
     %w[ ff037a73fc1094455e7bbf506171a3f3cf873ae6 ].each do |rev|
       mock(GitCommitNotifier::Git).show(rev, :ignore_whitespaces => true) { IO.read(FIXTURES_PATH + 'git_show_' + rev) }
+      mock(GitCommitNotifier::Git).describe(rev) { IO.read(FIXTURES_PATH + 'git_describe_' + rev) }
     end
     diff = GitCommitNotifier::DiffToHtml.new
     diff.diff_between_revisions(first_rev, last_rev, 'tm-admin', 'refs/heads/rvm')
