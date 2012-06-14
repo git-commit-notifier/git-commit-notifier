@@ -1,7 +1,5 @@
 # -*- coding: utf-8; mode: ruby; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- vim:fenc=utf-8:filetype=ruby:et:sw=2:ts=2:sts=2
 
-require 'set'
-
 # Git methods
 class GitCommitNotifier::Git
   class << self
@@ -98,7 +96,7 @@ class GitCommitNotifier::Git
     def new_commits(oldrev, newrev, refname, unique_to_current_branch)
       # We want to get the set of commits (^B1 ^B2 ... ^oldrev newrev)
       # Where B1, B2, ..., are any other branch
-      s = Set.new
+      a = Array.new
 
       # If we want to include only those commits that are
       # unique to this branch, then exclude commits that occur on
@@ -106,23 +104,23 @@ class GitCommitNotifier::Git
       if unique_to_current_branch
         # Make a set of all branches, not'd (^BCURRENT ^B1 ^B2...)
         not_branches = lines_from_shell("git rev-parse --not --branches")
-        s.merge(not_branches.to_a.map { |l| l.chomp }.to_set)
+        a = not_branches.map { |l| l.chomp }
 
         # Remove the current branch (^BCURRENT) from the set
         current_branch = rev_parse(refname)
-        s.delete("^#{current_branch}")
+        a.delete_at a.index("^#{current_branch}") unless a.index("^#{current_branch}").nil?
       end
 
       # Add not'd oldrev (^oldrev)
-      s.add("^#{oldrev}")  unless oldrev =~ /^0+$/
+      a.push("^#{oldrev}")  unless oldrev =~ /^0+$/
 
       # Add newrev
-      s.add(newrev)
+      a.push(newrev)
 
       # We should now have ^B1... ^oldrev newrev
 
       # Get all the commits that match that specification
-      lines = lines_from_shell("git rev-list --reverse #{s.to_a.join(' ')}")
+      lines = lines_from_shell("git rev-list --reverse #{a.join(' ')}")
       commits = lines.to_a.map { |l| l.chomp }
     end
 
