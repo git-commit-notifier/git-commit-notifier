@@ -122,4 +122,18 @@ describe GitCommitNotifier::Git do
       GitCommitNotifier::Git.changed_files(SAMPLE_REV, SAMPLE_REV_2).should == files
     end
   end
+
+  describe :split_status do
+    it "should split list of changed files in a hash indexed with statuses" do
+      files = ["M       README.rdoc\n",
+               "D       git_commit_notifier/Rakefile\n",
+               "M       post-receive\n"]
+      mock(GitCommitNotifier::Git).from_shell("git log #{SAMPLE_REV}..#{SAMPLE_REV_2} --name-status --pretty=oneline" ) { IO.read(FIXTURES_PATH + 'git_log_name_status') }
+      output = GitCommitNotifier::Git.split_status(SAMPLE_REV, SAMPLE_REV_2)
+      output[:m].should == [ 'README.rdoc', 'post-receive' ]
+      output[:d].should == [ 'git_commit_notifier/Rakefile' ]
+    end
+  end
+
+
 end

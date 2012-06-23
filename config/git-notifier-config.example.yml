@@ -1,7 +1,7 @@
 # set to true if you want to ignore empty merge messages
-ignore_merge: false 
+ignore_merge: false
 
-# Optional parameter for the subject-line of the mail 
+# Optional parameter for the subject-line of the mail
 # emailprefix: GIT
 
 # Set limit on maximum number of lines per file diff
@@ -36,7 +36,7 @@ too_many_files: 50
 #     commit_count_phrase   - The number of commits, as "1 commit", "2 commits", etc.
 #     commit_count_phrase2  - "2 commits: ", "3 commits: ", etc, or "" if just one
 #
-# The default subject template varies a little depending on whether 
+# The default subject template varies a little depending on whether
 # or not group_email_by_push is set.
 #
 #subject: "[${prefix}${slash_branch_name}] ${commit_count_phrase2}${message}"
@@ -53,7 +53,7 @@ too_many_files: 50
 # It can send to multiple destinations, just separate email addresses by ",".
 mailinglist: developers@example.com,dev2@example.com,dev3@example.com,cto@example.com
 
-# The from address. If not defined it will use 
+# The from address. If not defined it will use
 # the address that is configured in git
 # from: sender@example.com
 
@@ -64,7 +64,7 @@ mailinglist: developers@example.com,dev2@example.com,dev3@example.com,cto@exampl
 # custom_template: /absolute/path/to/readable/email.html.erb
 
 # select the delivery method: smtp, nntp, sendmail, or debug
-delivery_method: sendmail 
+delivery_method: sendmail
 
 # Optionally group email by push: don't send an email for each commit when true.
 # group_email_by_push: false
@@ -102,7 +102,7 @@ nntp_settings:
 
 # Decorate files and commit ids with link to a webview. Possible values: none, gitweb,
 # gitorious, cgit, trac, gitlabhq, or redmine
-link_files: none 
+link_files: none
 
 # If link_files is set to "gitweb", you need to configure the path to your gitweb
 # instance and the project name.
@@ -173,6 +173,10 @@ show_master_branch_name: false
 
 # ignore whitespace?
 ignore_whitespace: true
+
+# adding parameters to send webhooks
+# webooks:
+#  url: http://example.com:8081/commits
 
 # This is developer debugging options. Do not uncomment it if You aren't Jedi
 # debug:

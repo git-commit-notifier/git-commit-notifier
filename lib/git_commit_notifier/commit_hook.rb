@@ -196,6 +196,22 @@ module GitCommitNotifier
             :repo_name => repo_name
           )
           emailer.send
+
+          # WEBHOOK patch
+          unless config['webook'].nil?
+            webhook = Webhook.new(config,
+              :committer => result[:commit_info][:author],
+              :email => result[:commit_info][:email],
+              :message => result[:commit_info][:message],
+              :subject => subject,
+              :changed => Git.split_status(rev1,rev2),
+              :old_rev => rev1,
+              :new_rev => rev2,
+              :ref_name => ref_name,
+              :repo_name => repo_name
+            )
+            webhook.send
+          end
         else
           commit_number = 1
           diff2html.diff_between_revisions(rev1, rev2, prefix, ref_name) do |count, result|
@@ -226,6 +242,23 @@ module GitCommitNotifier
               :repo_name => repo_name
             )
             emailer.send
+
+            # WEBHOOK patch
+            unless config['webhook'].nil?
+              webhook = Webhook.new(config,
+                :committer => result[:commit_info][:author],
+                :email => result[:commit_info][:email],
+                :message => result[:commit_info][:message],
+                :subject => subject,
+                :changed => Git.split_status(rev1,rev2),
+                :old_rev => rev1,
+                :new_rev => rev2,
+                :ref_name => ref_name,
+                :repo_name => repo_name
+              )
+              webhook.send
+            end
+
             commit_number += 1
           end
         end

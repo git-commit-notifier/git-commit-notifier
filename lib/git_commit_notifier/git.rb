@@ -57,7 +57,7 @@ class GitCommitNotifier::Git
     end
 
     # Runs `git log` and extract filenames only
-    # @note uses "--pretty=fuller" and "--name-status" options.
+    # @note uses "--pretty=oneline" and "--name-status" options.
     # @return [Array(String)] File names
     # @see lines_from_shell
     # @param [String] rev1 First revision
@@ -66,6 +66,18 @@ class GitCommitNotifier::Git
       lines = lines_from_shell("git log #{rev1}..#{rev2} --name-status --pretty=oneline")
       lines = lines.select {|line| line =~ /^\w{1}\s+\w+/} # grep out only filenames
       lines.uniq
+    end
+
+    # splits the output of changed_files
+    # @return [Hash(Array)] file names sorted by status
+    # @see changed_files
+    # @param [Array(String)] lines
+    def split_status(rev1, rev2)
+      lines = changed_files(rev1, rev2)
+      modified = lines.map { |l| l.gsub(/M\s/,'').strip if l[0,1] == 'M' }.select { |l| !l.nil? }
+      added = lines.map { |l| l.gsub(/A\s/,'').strip if l[0,1] == 'A' }.select { |l| !l.nil? }
+      deleted = lines.map { |l| l.gsub(/D\s/,'').strip if l[0,1] == 'D' }.select { |l| !l.nil? }
+      return { m: modified, a: added, d: deleted }
     end
 
     def branch_commits(treeish)
