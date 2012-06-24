@@ -57,6 +57,11 @@ mailinglist: developers@example.com,dev2@example.com,dev3@example.com,cto@exampl
 # the address that is configured in git
 # from: sender@example.com
 
+# If reply_to_author is set to true, the Reply-To address is same as the author's
+# email address, if not it will be same as the from address.
+# Defaults to false
+# reply_to_author: false
+
 # stylesheet file (embedded template/styles.css by default)
 # stylesheet: /absolute/path/to/readable/stylesheet.css
 

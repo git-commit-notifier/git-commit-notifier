@@ -181,6 +181,7 @@ class GitCommitNotifier::Emailer
     to_tag = config['delivery_method'] == 'nntp' ? 'Newsgroups' : 'To'
     quoted_from_alias = !@from_alias.nil? ? quote_if_necessary("#{@from_alias}",'utf-8') : nil
     from = (@from_alias.nil? || @from_alias.empty?) ? @from_address : "#{quoted_from_alias} <#{@from_address}>"
+    reply_to = (@from_alias.nil? || !config['reply_to_author']) ? @reply_to_address : "#{@from_alias} <#{@reply_to_address}>"
 
     plaintext = if config['add_plaintext'].nil? || config['add_plaintext']
       @text_message
@@ -190,6 +191,7 @@ class GitCommitNotifier::Emailer
 
     content = []
     content << "From: #{from}"  unless from.nil?
+    content << "Reply-To: #{reply_to}"  unless reply_to.nil?
 
     # Setting the email date from the commit date is undesired by those
     # who sort their email by send date instead of receive date
