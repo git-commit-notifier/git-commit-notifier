@@ -199,7 +199,7 @@ module GitCommitNotifier
           emailer.send
 
           # WEBHOOK patch
-          unless config['webook'].nil?
+          unless config['webhook'].nil?
             webhook = Webhook.new(config,
               :committer => result[:commit_info][:author],
               :email => result[:commit_info][:email],
