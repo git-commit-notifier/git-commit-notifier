@@ -47,6 +47,7 @@ module GitCommitNotifier
       @lines_added = 0
       @file_added = false
       @file_removed = false
+      @file_changes = []
       @binary = false
     end
 
@@ -81,6 +82,11 @@ module GitCommitNotifier
     # Gets ignore_merge setting from {#config}.
     def ignore_merge?
       config['ignore_merge']
+    end
+
+    # Gets show_summary setting from {#config}.
+    def show_summary?
+      config['show_summary']
     end
 
     # Gets ignore_whitespace setting from {#config}.
@@ -200,7 +206,12 @@ module GitCommitNotifier
       end
 
       header = "#{op} #{binary}file #{file_name}"
-      "<h2>#{header}</h2>\n"
+
+      if show_summary?
+        @file_changes << [ file_name, header ]
+      end
+
+      "<h2 id=\"#{file_name}\">#{header}</h2>\n"
     end
 
     # Determines are two lines are sequentially placed in diff (no skipped lines between).
@@ -532,15 +543,30 @@ module GitCommitNotifier
 
       multi_line_message = commit_info[:message].count > 1
       title += "<dt>Message</dt><dd class='#{multi_line_message ? "multi-line" : ""}'>#{message_array_as_html(commit_info[:message])}</dd>\n"
-
       title += "</dl>"
 
-      text = "#{raw_diff}"
+      html_diff = diff_for_revision(extract_diff_from_git_show_output(raw_diff))
+      message_array = message_array_as_html(changed_files.split("\n"))
+      text = ""
+
+      if show_summary? and @file_changes.respond_to?("each")
+        title += "<ul>"
+
+        @file_changes.each do |file_name, header|
+          title += "<li><a href=\"\##{file_name}\">#{header}</a></li>"
+          text += "#{header}\n"
+        end
+
+        title += "</ul>"
+        text += "\n"
+      end
+
+      text += "#{raw_diff}"
       text += "#{changed_files}\n\n\n"
 
       html = title
-      html += diff_for_revision(extract_diff_from_git_show_output(raw_diff))
-      html += message_array_as_html(changed_files.split("\n"))
+      html += html_diff
+      html += message_array
       html += "<br /><br />"
       commit_info[:message] = first_sentence(commit_info[:message])
 

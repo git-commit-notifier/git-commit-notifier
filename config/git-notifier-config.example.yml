@@ -10,6 +10,9 @@ lines_per_diff: 300
 # Show file list only when too many files
 too_many_files: 50
 
+# Show summary before changes
+show_summary: true
+
 # Whether to expand css inline. May be compatible with more mail readers
 # but consumes much more space and more cpu. Defaults to true
 # expand_css: true
