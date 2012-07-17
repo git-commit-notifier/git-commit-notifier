@@ -545,9 +545,11 @@ module GitCommitNotifier
       title += "<dt>Message</dt><dd class='#{multi_line_message ? "multi-line" : ""}'>#{message_array_as_html(commit_info[:message])}</dd>\n"
       title += "</dl>"
 
+      @file_changes = []
+      text = ""
+
       html_diff = diff_for_revision(extract_diff_from_git_show_output(raw_diff))
       message_array = message_array_as_html(changed_files.split("\n"))
-      text = ""
 
       if show_summary? and @file_changes.respond_to?("each")
         title += "<ul>"
