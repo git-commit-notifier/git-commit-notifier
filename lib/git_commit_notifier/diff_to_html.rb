@@ -651,10 +651,10 @@ module GitCommitNotifier
         html += "<dt>Message</dt><dd class='#{multi_line_message ? "multi-line" : ""}'>#{message_array_as_html(message_array)}</dd>\n"
         html += "</dl>"
 
-        text = "Tag:</strong> #{tag} (#{change_type == :create ? "added" : "updated"})\n"
+        text = "Tag: #{tag} (#{change_type == :create ? "added" : "updated"})\n"
         text += "Type: annotated\n"
         text += "Commit: #{tag_info[:tagobject]}\n"
-        text += "Tagger: tag_info[:taggername] tag_info[:taggeremail]\n"
+        text += "Tagger: #{tag_info[:taggername]} #{tag_info[:taggeremail]}\n"
         text += "Message: #{tag_info[:contents]}\n"
 
         commit_info[:message] = message
