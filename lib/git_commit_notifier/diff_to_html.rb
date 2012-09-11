@@ -190,6 +190,8 @@ module GitCommitNotifier
           "<a href='#{config['gitweb']['path']}?p=#{config['gitweb']['project'] || "#{Git.repo_name}.git"};f=#{file_name};h=#{@current_sha};hb=#{@current_commit}'>#{file_name}</a>"
         elsif config["link_files"] == "gitorious" && config["gitorious"]
           "<a href='#{config['gitorious']['path']}/#{config['gitorious']['project']}/#{config['gitorious']['repository']}/blobs/#{branch_name}/#{file_name}'>#{file_name}</a>"
+        elsif config["link_files"] == "trac" && config["trac"]
+          "<a href='#{config['trac']['path']}/#{@current_commit}/#{file_name}'>#{file_name}</a>"
         elsif config["link_files"] == "cgit" && config["cgit"]
           "<a href='#{config['cgit']['path']}/#{config['cgit']['project']}/tree/#{file_name}'>#{file_name}</a>"
         elsif config["link_files"] == "gitlabhq" && config["gitlabhq"]
@@ -504,7 +506,7 @@ module GitCommitNotifier
     # @see COMMIT_LINK_MAP
     def markup_commit_for_html(commit)
       mode = (config["link_files"] || "default").to_sym
-      mode = :default  unless config.has_key?(mode)
+      mode = :default  unless config.has_key?(mode.to_s)
       mode = :default  unless COMMIT_LINK_MAP.has_key?(mode)
       COMMIT_LINK_MAP[mode].call(config, commit)
     end
