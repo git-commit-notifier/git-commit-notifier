@@ -118,7 +118,7 @@ REF=$4
 CONFIG=myconfig.yml
 
 # Assume repository exists in directory and user has pull access
-cd /repository/${repo}
+cd /repository/$REPO
 git pull
 echo $BEFORE $AFTER $REF | /usr/local/bin/git-commit-notifier $CONFIG
 ```
