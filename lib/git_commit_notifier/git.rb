@@ -171,7 +171,12 @@ class GitCommitNotifier::Git
         ''
       end
       return git_prefix  unless git_prefix.empty?
-      File.expand_path(toplevel_dir).split("/").last.sub(/\.git$/, '')
+      git_path = toplevel_dir
+      # In a bare repository, toplevel directory is empty.  Revert to git_dir instead.
+      if git_path.empty?
+        git_path = git_dir
+      end
+      File.expand_path(git_path).split("/").last.sub(/\.git$/, '')
     end
 
     # Gets mailing list address.
