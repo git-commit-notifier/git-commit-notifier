@@ -74,7 +74,54 @@ Git-commit-notifier supports easy integration with Redmine, Bugzilla and MediaWi
 Git-commit-notifier can send a webhook just after sending a mail, This webook will be sent in a POST request to a server specified in the configuration (webhook / url), under JSON format following the same syntax as Github webhooks.
 
 * [Cogbot](https://github.com/mose/cogbot) is the irc bot for which that feature was originaly designed for. Only a subset of the Github json file was required for that one so maybe it won't work on all Github webhook recievers.
-* [Github webhooks](https://help.github.com/articles/post-receive-hooks) describes the json format expected and some hints on how to design a webhook reciever.
+* [Github webhooks](https://help.github.com/articles/post-receive-hooks) describes the json format expected and some hints on how to design a webhook reciever.  Be sure to extract the 'ref' from the json.  An example Sinatra server to use git-commit-notifier might look like:
+
+```ruby
+require 'rubygems'
+require 'json'
+require 'sinatra'
+
+post '/' do
+  if params[:payload]
+    push = JSON.parse(params[:payload])
+
+    repo = push['repository']['name']
+    before_id = push['before']
+    after_id = push['after']
+    ref = push['ref']
+
+    system("/usr/local/bin/change-notify.sh #{repo} #{before_id} #{after_id} #{ref}")
+  end
+end
+```
+
+change-notify.sh might look like:
+
+```sh
+#!/bin/sh
+
+set -e
+
+EXPECTED_ARGS=4
+E_BADARGS=65
+
+if [ $# -ne $EXPECTED_ARGS ]
+then
+    echo "Usage: `basename $0` {repo} {before commit ID} {after commit ID} {ref}"
+    exit $E_BADARGS
+fi
+
+REPO=$1
+BEFORE=$2
+AFTER=$3
+REF=$4
+CONFIG=myconfig.yml
+
+# Assume repository exists in directory and user has pull access
+cd /repository/${repo}
+git pull
+echo $BEFORE $AFTER $REF | /usr/local/bin/git-commit-notifier $CONFIG
+```
 
 ## Integration of links to other websites
 
