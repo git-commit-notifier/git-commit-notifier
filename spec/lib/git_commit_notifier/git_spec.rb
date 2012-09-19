@@ -70,13 +70,13 @@ describe GitCommitNotifier::Git do
 
     it "should return folder name if no emailprefix and directory not ended with .git" do
       mock(GitCommitNotifier::Git).from_shell("git config hooks.emailprefix") { " " }
-      mock(GitCommitNotifier::Git).git_dir { "/home/someuser/repositories/myrepo" }
+      stub(GitCommitNotifier::Git).toplevel_dir { "/home/someuser/repositories/myrepo" }
       GitCommitNotifier::Git.repo_name.should == "myrepo"
     end
 
     it "should return folder name without extension if no emailprefix and directory ended with .git" do
       mock(GitCommitNotifier::Git).from_shell("git config hooks.emailprefix") { " " }
-      mock(GitCommitNotifier::Git).git_dir { "/home/someuser/repositories/myrepo.git" }
+      stub(GitCommitNotifier::Git).toplevel_dir { "/home/someuser/repositories/myrepo.git" }
       GitCommitNotifier::Git.repo_name.should == "myrepo"
     end
   end
@@ -105,8 +105,8 @@ describe GitCommitNotifier::Git do
   describe :new_empty_branch do
     it "should commit an empty branch and output nothing" do
       mock(GitCommitNotifier::Git).from_shell("git rev-parse --not --branches") {
-        "^#{SAMPLE_REV}\n^#{SAMPLE_REV}\n^#{SAMPLE_REV_2}" }
-      mock(GitCommitNotifier::Git).rev_parse("refs/heads/branch2") { SAMPLE_REV }
+        "^#{SAMPLE_REV}\n^#{SAMPLE_REV_2}" }
+      stub(GitCommitNotifier::Git).rev_parse("refs/heads/branch2") { SAMPLE_REV }
       stub(GitCommitNotifier::Git).from_shell("git rev-list --reverse #{SAMPLE_REV} ^#{SAMPLE_REV_2}") { SAMPLE_REV }
       mock(GitCommitNotifier::Git).from_shell("git rev-list --reverse ^#{SAMPLE_REV} ^#{SAMPLE_REV_2} #{SAMPLE_REV}") { "" }
       GitCommitNotifier::Git.new_commits("0000000000000000000000000000000000000000", SAMPLE_REV, "refs/heads/branch2", true).should == []
