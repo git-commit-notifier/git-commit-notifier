@@ -179,6 +179,28 @@ class GitCommitNotifier::Git
       File.expand_path(git_path).split("/").last.sub(/\.git$/, '')
     end
 
+	# Gets repository name.
+    # @note Tries to gets human readable repository name through `git config hooks.emailprefix` call.
+    #       If it's not specified then returns directory name with parent directory name (except '.git'
+	#       suffix if exists).
+    # @return [String] Human readable repository name.
+    def repo_name_with_parent
+      git_prefix = begin
+        from_shell("git config hooks.emailprefix").strip
+      rescue ArgumentError
+        ''
+      end
+      return git_prefix  unless git_prefix.empty?
+      git_path = toplevel_dir
+      # In a bare repository, toplevel directory is empty.  Revert to git_dir instead.
+      if git_path.empty?
+        git_path = git_dir
+      end
+      name_with_parent = File.expand_path(git_path).scan(/[a-zA-z0-9]+\/[a-zA-Z0-9]+.git$/).first;
+      return name_with_parent.sub(/\.git$/, '') unless name_with_parent.empty?
+      File.expand_path(git_path).split("/").last.sub(/\.git$/, '')
+    end
+
     # Gets mailing list address.
     # @note mailing list address retrieved through `git config hooks.mailinglist` call.
     # @return [String] Mailing list address if exists; otherwise nil.
