@@ -30,11 +30,12 @@ class GitCommitNotifier::Git
     # @see from_shell
     # @param [String] rev Revision
     # @param [Hash] opts Options
-    # @option opts [Boolean] :ignore_whitespaces Ignore whitespaces or not
+    # @option opts [String] :ignore_whitespace How whitespaces should be treated
     def show(rev, opts = {})
       gitopt = " --date=rfc2822"
       gitopt += " --pretty=fuller"
-      gitopt += " -w" if opts[:ignore_whitespaces]
+      gitopt += " -w" if opts[:ignore_whitespace] == 'all'
+      gitopt += " -b" if opts[:ignore_whitespace] == 'change'
       from_shell("git show #{rev.strip}#{gitopt}")
     end
 

@@ -90,9 +90,11 @@ module GitCommitNotifier
     end
 
     # Gets ignore_whitespace setting from {#config}.
-    # @return [Boolean] true if whitespaces should be ignored in diff; otherwise false.
-    def ignore_whitespaces?
-      config['ignore_whitespace'].nil? || config['ignore_whitespace']
+    # @return [String] How whitespaces should be treated in diffs (none, all, change)
+    def ignore_whitespace
+      return 'all' if config['ignore_whitespace'].nil?
+      return 'none' if !config['ignore_whitespace']
+      return (['all', 'change', 'none'].include?(config['ignore_whitespace']) ? config['ignore_whitespace'] : 'all')
     end
 
     # Adds separator between diff blocks to @diff_result.
@@ -515,7 +517,7 @@ module GitCommitNotifier
 
     def diff_for_commit(commit)
       @current_commit = commit
-      raw_diff = truncate_long_lines(Git.show(commit, :ignore_whitespaces => ignore_whitespaces?))
+      raw_diff = truncate_long_lines(Git.show(commit, :ignore_whitespace => ignore_whitespace))
       raise "git show output is empty" if raw_diff.empty?
 
       commit_info = extract_commit_info_from_git_show_output(raw_diff)

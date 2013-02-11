@@ -180,7 +180,10 @@ unique_commits_per_branch: false
 show_master_branch_name: false
 
 # ignore whitespace?
-ignore_whitespace: true
+#  all: ignore all whitespace (same as true)
+#  change: ignore changes in amount of whitespace
+#  none: do not ignore any whitespace (same as false)
+ignore_whitespace: all
 
 # adding parameters to send webhooks
 # webooks:
