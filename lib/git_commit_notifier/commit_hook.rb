@@ -100,7 +100,7 @@ module GitCommitNotifier
         slash_branch_name = "" if !config["show_master_branch_name"] && slash_branch_name == '/master'
 
         # Identify email recipients
-        recipient = config["mailinglist"] || Git.mailing_list_address
+        recipient = config["#{branch_name}_mailinglist"] || config["mailinglist"] || Git.mailing_list_address
 
         # If no recipients specified, bail out gracefully. This is not an error, and might be intentional
         if recipient.nil? || recipient.length == 0
