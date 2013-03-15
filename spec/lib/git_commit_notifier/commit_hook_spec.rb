@@ -111,6 +111,7 @@ describe GitCommitNotifier::CommitHook do
   describe :run do
     it "should report informational message when no recipients specified" do
       mock(File).exists?(:noconfig) { false }
+      mock(GitCommitNotifier::CommitHook).info(/Unable to find/)
       mock(GitCommitNotifier::Git).mailing_list_address { nil }
       mock(GitCommitNotifier::CommitHook).info(/recipient/)
       GitCommitNotifier::CommitHook.run(:noconfig, :rev1, :rev2, 'master')

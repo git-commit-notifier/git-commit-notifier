@@ -85,7 +85,12 @@ module GitCommitNotifier
       def run(config_name, rev1, rev2, ref_name)
 
         # Load the configuration
-        @config = File.exists?(config_name) ? YAML::load_file(config_name) : {}
+        if File.exists?(config_name) 
+          @config = YAML::load_file(config_name) 
+        else
+          GitCommitNotifier::CommitHook.info("Unable to find configuration file: #{config_name}")
+          @config = {}
+        end
 
         project_path = Git.git_dir
         repo_name = Git.repo_name
@@ -100,7 +105,11 @@ module GitCommitNotifier
         slash_branch_name = "" if !config["show_master_branch_name"] && slash_branch_name == '/master'
 
         # Identify email recipients
-        recipient = config["mailinglist"] || Git.mailing_list_address
+        if config["prefer_git_config_mailinglist"]
+          recipient = Git.mailing_list_address || config["mailinglist"] 
+        else
+          recipient = config["mailinglist"] || Git.mailing_list_address
+        end
 
         # If no recipients specified, bail out gracefully. This is not an error, and might be intentional
         if recipient.nil? || recipient.length == 0

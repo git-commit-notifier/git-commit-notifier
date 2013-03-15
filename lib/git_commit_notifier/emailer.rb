@@ -136,7 +136,7 @@ class GitCommitNotifier::Emailer
 
       recipients = @recipient.dup
       recipients.force_encoding('ASCII-8BIT') if recipients.respond_to?(:force_encoding)
-      recipients = recipients.split(",")
+      recipients = recipients.split(",").map(&:strip)
       smtp.open_message_stream(@from_address, recipients) do |f|
         content.each do |line|
           line.force_encoding('ASCII-8BIT') if line.respond_to?(:force_encoding)

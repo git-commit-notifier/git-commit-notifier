@@ -56,6 +56,12 @@ show_summary: true
 # It can send to multiple destinations, just separate email addresses by ",".
 mailinglist: developers@example.com,dev2@example.com,dev3@example.com,cto@example.com
 
+# If set to true, the notifier will check first for a git config hooks.mailinglist
+# variable and use the recipients listed there before checking for the recipient(s)
+# listed above. If false, uses the receipient(s) above if defined, regardless 
+# of the git config variable. Defaults to false.
+prefer_git_config_mailinglist: false
+
 # The from address. If not defined it will use
 # the address that is configured in git
 # from: sender@example.com
