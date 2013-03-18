@@ -181,6 +181,17 @@ class GitCommitNotifier::Git
       File.expand_path(git_path).split("/").last.sub(/\.git$/, '')
     end
 
+    # Gets repository name.
+    # @return [String] Repository name.
+    def repo_name_real
+      git_path = toplevel_dir
+      # In a bare repository, toplevel directory is empty.  Revert to git_dir instead.
+      if git_path.empty?
+        git_path = git_dir
+      end
+      File.expand_path(git_path).split("/").last
+    end
+
 	# Gets repository name.
     # @note Tries to gets human readable repository name through `git config hooks.emailprefix` call.
     #       If it's not specified then returns directory name with parent directory name (except '.git'

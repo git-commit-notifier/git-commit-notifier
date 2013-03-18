@@ -61,6 +61,13 @@ If you want to send mails on each commit instead on each push, you should add a 
 echo "HEAD^1 HEAD refs/heads/master" | git-commit-notifier path_to_config.yml
 ```
 
+## Decorate files and commit ids with link to a webview
+You need change next line in config file ```link_files: none```
+
+Possible values: none, gitweb, gitorious, cgit, trac, gitlabhq, or redmine
+
+* "cgit" you can omit "project". In this case repository name will be used by default
+
 ## Integration with Redmine, Bugzilla, MediaWiki
 
 Git-commit-notifier supports easy integration with Redmine, Bugzilla and MediaWiki. All you need is to uncomment the according line in the configuration and change the links to your software installations instead of example ones (no trailing slash please).

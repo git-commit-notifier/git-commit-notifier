@@ -134,7 +134,9 @@ gitorious:
 # if link_files is set to "cgit", you need to configure the path to your cgit
 cgit:
   path: http://example.com/path_to_cgit
-  project: backend
+  project: project-name
+# project defaults to git repository name
+
 
 # If link_files is set to "trac", you need to configure the path to your trac
 # instance
