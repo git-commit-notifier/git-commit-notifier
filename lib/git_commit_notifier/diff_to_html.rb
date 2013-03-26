@@ -211,6 +211,8 @@ module GitCommitNotifier
           end
         elsif config["link_files"] == "gitalist" && config["gitalist"]
           "<a href='#{config['gitalist']['path']}/#{config['gitalist']['project'] || Git.repo_name}/#{@current_commit}/blob/#{file_name}'>#{file_name}</a>"
+        elsif config["link_files"] == "github" && config["github"]
+          "<a href='#{config['github']['path']}/#{config['github']['project']}/#{Git.repo_name}/blob/#{@current_commit}/#{file_name}'>#{file_name}</a>"
         elsif config["link_files"] == "redmine" && config["redmine"]
           "<a href='#{config['redmine']['path']}/projects/#{config['redmine']['project'] || Git.repo_name}/repository/revisions/#{@current_commit}/entry/#{file_name}'>#{file_name}</a>"
         else
@@ -510,6 +512,7 @@ module GitCommitNotifier
       :gitlabhq  => lambda { |config, commit| "<a href='#{config['gitlabhq']['path']}/#{Git.repo_name.gsub(".", "_")}/commits/#{commit}'>#{commit}</a>" },
       :gitalist  => lambda { |config, commit| "<a href='#{config['gitalist']['path']}/projects/#{config['gitalist']['project'] || Git.repo_name}/#{commit}/log'>#{commit}</a>" },
       :redmine   => lambda { |config, commit| "<a href='#{config['redmine']['path']}/projects/#{config['redmine']['project'] || Git.repo_name}/repository/revisions/#{commit}'>#{commit}</a>" },
+      :github    => lambda { |config, commit| "<a href='#{config['github']['path']}/#{config['github']['project']}/#{Git.repo_name}/commit/#{commit}'>#{commit}</a>" },
       :default   => lambda { |config, commit| commit.to_s }
     }.freeze
 
