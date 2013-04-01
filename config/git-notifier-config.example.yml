@@ -56,6 +56,9 @@ show_summary: true
 # It can send to multiple destinations, just separate email addresses by ",".
 mailinglist: developers@example.com,dev2@example.com,dev3@example.com,cto@example.com
 
+# If set to true, the committer (author) will receive the commit mail as well.
+send_mail_to_committer: false
+
 # If set to true, the notifier will check first for a git config hooks.mailinglist
 # variable and use the recipients listed there before checking for the recipient(s)
 # listed above. If false, uses the receipient(s) above if defined, regardless 
