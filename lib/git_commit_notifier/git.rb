@@ -107,6 +107,10 @@ class GitCommitNotifier::Git
       from_shell("git rev-parse '#{param}'").strip
     end
 
+    def short_commit_id(param)
+      from_shell("git rev-parse --short '#{param}'").strip
+    end
+
     def branch_head(treeish)
       from_shell("git rev-parse #{treeish}").strip
     end

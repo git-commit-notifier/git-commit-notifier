@@ -32,6 +32,7 @@ show_summary: true
 #     branch_name           - Name of the git branch
 #     slash_branch_name     - /branch_name (master is "" unless show_master_branch_name)
 #     commit_id             - The git commit id (hash)
+#     short_commit_id       - The abbreviated git commit id (first 7 digits of the hash)
 #     description           - The git description tag ("git describe --always")
 #     message               - The commit message
 #     commit_number         - The commit number within the push; 1-based

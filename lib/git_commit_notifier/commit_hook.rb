@@ -153,6 +153,7 @@ module GitCommitNotifier
         #     branch_name
         #     slash_branch_name
         #     commit_id (hash)
+        #     short_commit_id (first few unique digits of the hash)
         #     description ('git describe' tag)
         #     short_message
         #     commit_number
@@ -165,6 +166,7 @@ module GitCommitNotifier
           :branch_name => branch_name,
           :slash_branch_name => slash_branch_name,
           :commit_id => nil,
+          :short_commit_id => lambda { |commit_info| Git.short_commit_id(commit_info[:commit]) },
           :description => lambda { |commit_info| Git.describe(commit_info[:commit]) },
           :message => nil,
           :commit_number => nil,
