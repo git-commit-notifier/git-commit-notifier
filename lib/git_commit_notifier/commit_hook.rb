@@ -95,6 +95,11 @@ module GitCommitNotifier
       # @return [NilClass] nil
       # @see config
       def run(config_name, rev1, rev2, ref_name)
+      
+        if @start_time.nil?
+          @start_time = Time.new
+          @start_time_offset = 0
+        end
 
         # Load the configuration
         if File.exists?(config_name) 
@@ -214,7 +219,9 @@ module GitCommitNotifier
             :from_alias => result[:commit_info][:author],
             :reply_to_address => config["reply_to_author"] ? result[:commit_info][:email] : config["from"] || result[:commit_info][:email],
             :subject => subject,
-            :date => result[:commit_info][:date],
+            :commit_date => result[:commit_info][:date],
+            :current_date => Time.new.rfc2822,
+            :offset_date => (@start_time + @start_time_offset).rfc2822,
             :text_message => text.join("------------------------------------------\n\n"),
             :html_message => html.join("<hr /><br />"),
             :old_rev => rev1,
@@ -238,6 +245,8 @@ module GitCommitNotifier
               :repo_name => repo_name
             )
             webhook.send
+            
+            @start_time_offset += 1
           end
         else
           commit_number = 1
@@ -261,7 +270,9 @@ module GitCommitNotifier
               :from_alias => result[:commit_info][:author],
               :reply_to_address => config["reply_to_author"] ? result[:commit_info][:email] : config["from"] || result[:commit_info][:email],
               :subject => subject,
-              :date => result[:commit_info][:date],
+              :commit_date => result[:commit_info][:date],
+              :current_date => Time.new.rfc2822,
+              :offset_date => (@start_time + @start_time_offset).rfc2822,
               :text_message => result[:text_content],
               :html_message => result[:html_content],
               :old_rev => rev1,
@@ -288,6 +299,8 @@ module GitCommitNotifier
             end
 
             commit_number += 1
+            
+            @start_time_offset += 1
           end
         end
         nil

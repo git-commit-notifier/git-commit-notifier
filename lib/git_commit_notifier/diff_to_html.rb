@@ -28,7 +28,7 @@ module GitCommitNotifier
           return m unless match
           r = { :phrase => match[1] }
           captures = match[2].split(/[\s\&\,]+/).map { |m| (m =~ /(\d+)/) ? $1 : m }.reject { |c| c.empty? }
-          r[:links] = captures.map { |mn| { :title => "##{mn}", :url => "#{url}/issues/show/#{mn}" } }
+          r[:links] = captures.map { |mn| { :title => "##{mn}", :url => "#{url}/issues/#{mn}" } }
           r
         end },
       :bugzilla => { :search_for => /\bBUG\s*(\d+)/i, :replace_with => '#{url}/show_bug.cgi?id=\1' },

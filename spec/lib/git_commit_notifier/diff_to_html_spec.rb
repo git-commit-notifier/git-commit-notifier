@@ -206,7 +206,7 @@ describe GitCommitNotifier::DiffToHtml do
         'mediawiki' => 'http://example.com/wiki', # will rework [[text]] to MediaWiki pages
         'redmine' => 'http://redmine.example.com' # will rework refs #123, #125 to Redmine issues
       }
-      @diff.do_message_integration("[[text]] refs #123, #125").should == "<a href=\"http://example.com/wiki/text\">[[text]]</a> refs <a href=\"http://redmine.example.com/issues/show/123\">#123</a>, <a href=\"http://redmine.example.com/issues/show/125\">#125</a>"
+      @diff.do_message_integration("[[text]] refs #123, #125").should == "<a href=\"http://example.com/wiki/text\">[[text]]</a> refs <a href=\"http://redmine.example.com/issues/123\">#123</a>, <a href=\"http://redmine.example.com/issues/125\">#125</a>"
     end
   end
 

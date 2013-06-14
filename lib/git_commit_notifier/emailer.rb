@@ -9,7 +9,7 @@ class GitCommitNotifier::Emailer
   # Default ERB template file path
   TEMPLATE = File.join(File.dirname(__FILE__), *'../../template/email.html.erb'.split('/')).freeze
   # Instance variable names
-  PARAMETERS = %w[project_path recipient from_address from_alias reply_to_address date subject text_message html_message repo_name ref_name old_rev new_rev].freeze
+  PARAMETERS = %w[project_path recipient from_address from_alias reply_to_address commit_date current_date offset_date subject text_message html_message repo_name ref_name old_rev new_rev].freeze
 
   # Gets config.
   # @return [Hash] Configuration
@@ -194,11 +194,19 @@ class GitCommitNotifier::Emailer
     content << "Reply-To: #{reply_to}"  unless reply_to.nil?
 
     # Setting the email date from the commit date is undesired by those
-    # who sort their email by send date instead of receive date
-    #content << "Date: #{@date}" if !@date.nil?
+    # who sort their email by send date instead of receive date.
+    # We currently use @offset_date, which starts with the time the notifier was started,
+    # and adds a second of time per commit. This should result in the commits arriving
+    # in order by their processing sequence, even when they are all processed within the
+    # same second
+    #date = @commit_date    # Date of the commit
+    #date = @current_date   # Date we processed this commit
+    date = @offset_date     # Date notifier started, plus 1 second per commit processed
+    date = Time.new.rfc2822 if date.nil?    # Fallback to current date if date is nil
 
     content.concat [
         "#{to_tag}: #{quote_if_necessary(@recipient, 'utf-8')}",
+        "Date: #{date}",
         "Subject: #{quote_if_necessary(@subject, 'utf-8')}",
         "X-Mailer: git-commit-notifier",
         "X-Git-Repository: #{@repo_name}",
