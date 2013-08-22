@@ -174,6 +174,13 @@ bundle install
 rake # Run specs
 ```
 
+or
+
+```bash
+gem build git-commit-notifier.gemspec
+[sudo] gem install git-commit-notifier-0.11.10.gem
+```
+
 Now you can create test configuration file (example provided in `config` directory) and test your code over any test repository in this manner:
 
 ```bash

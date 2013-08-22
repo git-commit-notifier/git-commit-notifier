@@ -2,6 +2,8 @@
 
 h2 {font-size:14px; background-color: #2e7bcc; color: white; font-weight: bold; padding: 10px;}
 
+h2 a {color: #FFCC33; text-decoration: none; font-size: 14px; font-weight: bold;}
+h2 a:visited {color: #CCCC66; text-decoration: none; font-size: 14px; font-weight: bold;}
 a, a:visited {color: #0B6CDA; text-decoration: none;}
 a:hover {text-decoration: underline;}
 
