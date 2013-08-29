@@ -128,7 +128,7 @@ class GitCommitNotifier::Git
     def branch_head(treeish)
       from_shell("git rev-parse #{treeish}").strip
     end
-    
+
 
     # Lists commits between specified rev and closest annotated tag.
     # Uses `git describe` to obtain information.
@@ -142,7 +142,7 @@ class GitCommitNotifier::Git
     #       Looking forward to someone coming up with a better way.
     def list_of_commits_between_current_commit_and_last_tag(tag_name, rev)
       result = Array.new
-      
+
       lines = from_shell("git describe --abbrev=0 #{rev}^1 2> /dev/null | cat ").strip # the `cat` is used to suppress the error that might arise when handling the case of the first commit
       if lines.length != 1
         previous_tag = lines
@@ -252,7 +252,7 @@ class GitCommitNotifier::Git
       if git_path.empty?
         git_path = git_dir
       end
-      name_with_parent = File.expand_path(git_path).scan(/[a-zA-z0-9\-]+\/[a-zA-Z0-9\-]+.git$/).first;
+      name_with_parent = File.expand_path(git_path).scan(/[a-zA-z0-9\-_]+\/[a-zA-Z0-9\-_]+.git$/).first;
       return name_with_parent.sub(/\.git$/, '')  unless name_with_parent.empty?
       File.expand_path(git_path).split("/").last.sub(/\.git$/, '')
     end
