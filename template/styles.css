@@ -22,6 +22,6 @@ td.sep {text-align:center; border-top:1px solid DimGray; border-bottom:1px solid
 .ln {background-color: white; width: 35px; padding-right: 5px; text-align:right; color: #666; border-right: 1px solid #ccc; }
 
 .r {background-color: #fdd;}
-.rr {background-color: #faa;}
+.rr {background-color: #faa; font-family: "Bitstream Vera Sans Mono","Monaco","Courier",monospace;}
 .a {background-color: #dfd;}
-.aa {background-color: #afa;}
+.aa {background-color: #afa; font-family: "Bitstream Vera Sans Mono","Monaco","Courier",monospace;}
