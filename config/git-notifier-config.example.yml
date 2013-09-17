@@ -76,8 +76,15 @@ prefer_git_config_mailinglist: false
 
 # If reply_to_author is set to true, the Reply-To address is same as the author's
 # email address, if not it will be same as the from address.
+# Note that you cannot set both, this and reply_to_mailinglist true!
 # Defaults to false
 # reply_to_author: false
+
+# If reply_to_mailinglist is set to true, the Reply-To address is same as the recipient
+# email address, or if that is missing, the same as hooks.mailinglist. If not it will be
+# same as the from address. Note that you cannot set both, this and reply_to_author true!
+# Defaults to false
+# reply_to_mailinglist: false
 
 # stylesheet file (embedded template/styles.css by default)
 # stylesheet: /absolute/path/to/readable/stylesheet.css
