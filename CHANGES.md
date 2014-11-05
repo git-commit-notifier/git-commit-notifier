@@ -2,6 +2,10 @@
 
 ## Not yet released
 
+## Version 0.12.7
+
+* Commit metalinks in emails.
+
 ## Version 0.12.5-0.12.6
 
 * Fix behaviour when git output is not utf-8.
