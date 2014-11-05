@@ -9,7 +9,24 @@ class GitCommitNotifier::Emailer
   # Default ERB template file path
   TEMPLATE = File.join(File.dirname(__FILE__), *'../../template/email.html.erb'.split('/')).freeze
   # Instance variable names
-  PARAMETERS = %w[project_path recipient from_address from_alias reply_to_address commit_date current_date offset_date subject text_message html_message repo_name ref_name old_rev new_rev].freeze
+  PARAMETERS = %w[
+    project_path
+    recipient
+    from_address
+    from_alias
+    reply_to_address
+    commit_date
+    current_date
+    offset_date
+    subject
+    text_message
+    html_message
+    repo_name
+    ref_name
+    old_rev
+    new_rev
+    message_link
+  ].freeze
 
   # Gets config.
   # @return [Hash] Configuration
