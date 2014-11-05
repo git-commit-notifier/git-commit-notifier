@@ -45,7 +45,7 @@ module GitCommitNotifier
       end
 
       def add_committer_to_recipient(recipient, committer_email)
-        if email?(committer_email) 
+        if email?(committer_email)
           "#{recipient},#{committer_email}"
         else
           recipient
@@ -105,15 +105,15 @@ module GitCommitNotifier
       # @return [NilClass] nil
       # @see config
       def run(config_name, rev1, rev2, ref_name)
-      
+
         if @start_time.nil?
           @start_time = Time.new
           @start_time_offset = 0
         end
 
         # Load the configuration
-        if File.exists?(config_name) 
-          @config = YAML::load_file(config_name) 
+        if File.exists?(config_name)
+          @config = YAML::load_file(config_name)
         else
           GitCommitNotifier::CommitHook.info("Unable to find configuration file: #{config_name}")
           @config = {}
@@ -255,7 +255,7 @@ module GitCommitNotifier
               :repo_name => repo_name
             )
             webhook.send
-            
+
             @start_time_offset += 1
           end
         else
@@ -288,7 +288,8 @@ module GitCommitNotifier
               :old_rev => rev1,
               :new_rev => rev2,
               :ref_name => ref_name,
-              :repo_name => repo_name
+              :repo_name => repo_name,
+              :message_link => result[:commit_info][:commit_link]
             )
             emailer.send
 
@@ -309,7 +310,7 @@ module GitCommitNotifier
             end
 
             commit_number += 1
-            
+
             @start_time_offset += 1
           end
         end

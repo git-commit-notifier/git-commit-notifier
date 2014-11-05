@@ -217,7 +217,7 @@ module GitCommitNotifier
 
       if show_summary?
         @file_changes << {
-          :file_name => file_name, 
+          :file_name => file_name,
           :text => "#{op} #{binary}file #{file_name}",
         }
       end
@@ -288,7 +288,7 @@ module GitCommitNotifier
         if @file_renamed
           @diff_result << "<tr class='renamed'>\n<td class='ln'>&nbsp;</td><td class='ln'></td><td>&nbsp;<u>#{@file_renamed_old_name}</u> was renamed to <u>#{@file_renamed_new_name}</u></td></tr>"
         end
-       
+
         removals = []
         additions = []
 
@@ -601,6 +601,11 @@ module GitCommitNotifier
       COMMIT_LINK_MAP[mode].call(config, commit)
     end
 
+    def extract_link(a_tag)
+      return nil  unless a_tag =~ /href\s*=\s*"([^"]+)"/
+      $1
+    end
+
     def diff_for_commit(commit)
       @current_commit = commit
       raw_diff = truncate_long_lines(Git.show(commit, :ignore_whitespace => ignore_whitespace))
@@ -629,8 +634,9 @@ module GitCommitNotifier
         changed_files = "Changed files:\n\n#{changed_file_list.uniq.join()}\n"
       end
 
+      commit_link = markup_commit_for_html(commit_info[:commit])
       title = "<dl class=\"title\">"
-      title += "<dt>Commit</dt><dd>#{markup_commit_for_html(commit_info[:commit])}</dd>\n"
+      title += "<dt>Commit</dt><dd>#{commit_link}</dd>\n"
       title += "<dt>Branch</dt><dd>#{CGI.escapeHTML(branch_name)}</dd>\n" if branch_name
 
       title += "<dt>Author</dt><dd>#{CGI.escapeHTML(commit_info[:author])} &lt;#{commit_info[:email]}&gt;</dd>\n"
@@ -676,7 +682,8 @@ module GitCommitNotifier
       {
         :commit_info  => commit_info,
         :html_content => html,
-        :text_content => text
+        :text_content => text,
+        :commit_link  => extract_link( commit_link ),
       }
     end
 
@@ -684,11 +691,12 @@ module GitCommitNotifier
 
       if change_type == :delete
         message = "Remove Lightweight Tag #{tag}"
+        commit_link = markup_commit_for_html(rev)
 
         html = "<dl class='title'>"
         html += "<dt>Tag</dt><dd>#{CGI.escapeHTML(tag)} (removed)</dd>\n"
         html += "<dt>Type</dt><dd>lightweight</dd>\n"
-        html += "<dt>Commit</dt><dd>#{markup_commit_for_html(rev)}</dd>\n"
+        html += "<dt>Commit</dt><dd>#{commit_link}</dd>\n"
         html += "</dl>"
 
         text = "Remove Tag: #{tag}\n"
@@ -716,7 +724,8 @@ module GitCommitNotifier
       @result << {
         :commit_info => commit_info,
         :html_content => html,
-        :text_content => text
+        :text_content => text,
+        :commit_link => extract_link( commit_link )
       }
     end
 
@@ -740,11 +749,12 @@ module GitCommitNotifier
         tag_info = Git.tag_info(ref_name)
 
         message = tag_info[:subject] || "#{change_type == :create ? "Add" : "Update"} Annotated Tag #{tag}"
+        commit_link = markup_commit_for_html(tag_info[:tagobject])
 
         html = "<dl class='title'>"
         html += "<dt>Tag</dt><dd>#{CGI.escapeHTML(tag)} (#{change_type == :create ? "added" : "updated"})</dd>\n"
         html += "<dt>Type</dt><dd>annotated</dd>\n"
-        html += "<dt>Commit</dt><dd>#{markup_commit_for_html(tag_info[:tagobject])}</dd>\n"
+        html += "<dt>Commit</dt><dd>#{commit_link}</dd>\n"
         html += "<dt>Tagger</dt><dd>#{CGI.escapeHTML(tag_info[:taggername])} #{CGI.escapeHTML(tag_info[:taggeremail])}</dd>\n"
 
         message_array = tag_info[:contents].split("\n")
@@ -754,7 +764,7 @@ module GitCommitNotifier
         if config['show_a_shortlog_of_commits_since_the_last_annotated_tag']
           list_of_commits_in_between = Git.list_of_commits_between_current_commit_and_last_tag(ref_name, tag_info[:tagobject])
           if list_of_commits_in_between.length > 0
-            html += "<dt><br/>Commits since the last annotated tag</dt><dd><br/><br/><ul>"                    
+            html += "<dt><br/>Commits since the last annotated tag</dt><dd><br/><br/><ul>"
             list_of_commits_in_between.each do |commit|
               if config['link_files'].to_s != "none"
                 l = markup_commit_for_html(commit[0])
@@ -780,9 +790,10 @@ module GitCommitNotifier
       end
 
       @result << {
-        :commit_info => commit_info,
+        :commit_info  => commit_info,
         :html_content => html,
-        :text_content => text
+        :text_content => text,
+        :commit_link  => extract_link( commit_link )
       }
     end
 
@@ -797,10 +808,10 @@ module GitCommitNotifier
         # The flag unique_to_current_branch passed to new_commits means the
         # opposite: "consider only commits that are unique to this branch"
 
-       	# Note :: In case of creation of a new branch, the oldrev passed by git 
-       	# to the post-receive hook is 00000... which causes the git commit notifier 
-       	# to send out notifications for ALL commits in the repository. Hence we force 
-       	# the "unique_commits_per_branch" config to "true" in such cases, and in other 
+       	# Note :: In case of creation of a new branch, the oldrev passed by git
+       	# to the post-receive hook is 00000... which causes the git commit notifier
+       	# to send out notifications for ALL commits in the repository. Hence we force
+       	# the "unique_commits_per_branch" config to "true" in such cases, and in other
        	# cases, we consider the value from the config file
         if oldrev =~ /^0+$/
           Git.new_commits(oldrev, newrev, ref_name, true)
