@@ -119,7 +119,7 @@ class GitCommitNotifier::Git
     end
 
     def toplevel_dir
-      from_shell("git rev-parse --show-toplevel").strip
+      from_shell("git rev-parse --absolute-git-dir").strip
     end
 
     def rev_parse(param)
