@@ -1,6 +1,10 @@
 # set to true if you want to ignore empty merge messages
 ignore_merge: false
 
+# If any commit in a push is a merge,
+# setting this to true will ignore all non-merge commits in that push.
+ignore_merge_dependencies: false
+
 # Optional parameter for the subject-line of the mail
 # emailprefix: GIT
 
