@@ -115,11 +115,11 @@ class GitCommitNotifier::Git
     end
 
     def git_dir
-      from_shell("git rev-parse --git-dir").strip
+      @git_dir ||= from_shell("git rev-parse --git-dir").strip
     end
 
     def toplevel_dir
-      from_shell("git rev-parse --show-toplevel").strip
+      @toplevel_dir ||= from_shell("git rev-parse --absolute-git-dir").strip
     end
 
     def rev_parse(param)
@@ -215,18 +215,23 @@ class GitCommitNotifier::Git
     #       If it's not specified then returns directory name (except '.git' suffix if exists).
     # @return [String] Human readable repository name.
     def repo_name
+      return @repo_name if @repo_name
+
       git_prefix = begin
         from_shell("git config hooks.emailprefix").strip
       rescue ArgumentError
         ''
       end
-      return git_prefix  unless git_prefix.empty?
+      if not git_prefix.empty?
+        @repo_name = git_prefix
+        return git_prefix
+      end
       git_path = toplevel_dir
       # In a bare repository, toplevel directory is empty.  Revert to git_dir instead.
       if git_path.empty?
         git_path = git_dir
       end
-      File.expand_path(git_path).split("/").last.sub(/\.git$/, '')
+      @repo_name = File.expand_path(git_path).split("/").last.sub(/\.git$/, '')
     end
 
     # Gets repository name.

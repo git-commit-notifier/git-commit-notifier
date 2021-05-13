@@ -99,6 +99,11 @@ module GitCommitNotifier
       config['ignore_merge']
     end
 
+    # Gets ignore_merge_dependencies setting from {#config}.
+    def ignore_merge_dependencies?
+      config['ignore_merge_dependencies']
+    end
+
     # Gets show_summary setting from {#config}.
     def show_summary?
       config['show_summary']
@@ -882,6 +887,11 @@ module GitCommitNotifier
       # Remove merge commits if required
       if ignore_merge?
         @result.reject! { |commit| merge_commit?(commit[:commit_info]) }
+      end
+
+      # If any commit is a merge, ignore all non-merge commits (if requested)
+      if ignore_merge_dependencies? and @result.count { |commit| merge_commit?(commit[:commit_info]) } > 0
+        @result.select! { |commit| merge_commit?(commit[:commit_info]) }
       end
 
       # If a block was given, pass it the results, in turn
